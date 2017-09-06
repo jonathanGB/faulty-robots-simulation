@@ -30,35 +30,42 @@ class CanvasScript {
     let axisHitBox = new Path.Rectangle(new Rectangle(50, 40, 1150, 30));
     axisHitBox.fillColor = "white"
     axisHitBox.opacity = 0
-    axisHitBox.on('click', ({event: {shiftKey}, point: {x}}) => {
-      let center = new Point(x, 50);
-      let radius = 15;
-      let robot = shiftKey ?
-        new Path.RegularPolygon(center, 3, radius + 5) :
-        new Path.Circle(center, radius);
-      robot.fillColor = shiftKey ?
-        "red" :
-        "green";
-      robot.strokeColor = "black";
-      robot.on({
-        mousedrag: ({target, point: {x}}) => {
-          target.position.x = x;
-          target.label.position.x = x;
-          this.canvas.style.cursor = "grab"
-        },
-        mouseup: () => {
-          console.log("up")
-          this.canvas.style.cursor = "default"
-        }
-      })
+    axisHitBox.on({
+      click: ({event: {shiftKey}, point: {x}}) => {
+        let center = new Point(x, 50);
+        let radius = 15;
+        let robot = shiftKey ?
+          new Path.RegularPolygon(center, 3, radius + 5) :
+          new Path.Circle(center, radius);
+        robot.fillColor = shiftKey ?
+          "red" :
+          "green";
+        robot.strokeColor = "black";
+        robot.on({
+          mousedrag: ({target, point: {x}}) => {
+            target.position.x = x;
+            target.label.position.x = x;
+            this.canvas.style.cursor = "move";
+          },
+          mouseenter: () => {
+            this.canvas.style.cursor = "move";
+          }
+        });
 
-      let iterationText = new PointText(center.add(0, 3));
-      iterationText.justification = 'center';
-      iterationText.fillColor = 'white';
-      iterationText.fontSize = 10;
-      iterationText.content = robotNumber.toString().padStart(2, "0");
-      robot.label = iterationText;
-      robotNumber++;
+        let iterationText = new PointText(center.add(0, 3));
+        iterationText.justification = 'center';
+        iterationText.fillColor = 'white';
+        iterationText.fontSize = 10;
+        iterationText.content = robotNumber.toString().padStart(2, "0");
+        robot.label = iterationText;
+        robotNumber++;
+      },
+      mousemove: () => {
+        this.canvas.style.cursor = "pointer";
+      },
+      mouseleave: () => {
+        this.canvas.style.cursor = "default";
+      }
     })
 
     // draw iteration number
