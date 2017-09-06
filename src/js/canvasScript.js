@@ -6,25 +6,40 @@ class CanvasScript {
   constructor() {
     this.canvas = document.getElementById("myCanvas");
     this.ctx = this.canvas.getContext("2d");
-    this.path = null;
+    this.axis = null;
+    this.separator = null;
+    this.iterationText = null;
 
     paper.setup(this.canvas);
   }
 
-  drawLine() {
-    let path = new Path();
-    this.path = path;
-  	path.strokeColor = 'black';
+  initialDraw() {
+    // draw axis, and store for further use (cloning)
+    let axis = new Path();
+    axis.strokeColor = 'black';
+    axis.strokeWidth = 3;
+    axis.strokeJoin = "bevel"
+    axis.add(new Point(50, 50));
+    axis.add(new Point(1200, 50));
+    axis.add(new Point(1175, 30));
+    axis.add(new Point(1200, 50));
+    axis.add(new Point(1175, 70));
+    this.axis = axis;
 
-  	let start = new Point(100, 100);
-  	path.moveTo(start);
-  	path.lineTo(start.add([ 200, -50 ]));
-    
-  	view.draw();
-  }
+    // draw iteration number
+    let iterationText = new PointText(new Point(7, 55));
+    iterationText.justification = 'left';
+    iterationText.fillColor = 'red';
+    iterationText.fontSize = 20;
+    iterationText.content = '000';
+    this.iterationText = iterationText;
 
-  scale() {
-    this.path.scale(1.5)
+    // draw separator, and store for further use (cloning)
+    let separator = new Path();
+    separator.strokeColor = "#777";
+    separator.add(new Point(0, 100));
+    separator.add(new Point(1204, 100));
+    this.separator = separator;
   }
 }
 
