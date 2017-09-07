@@ -44,11 +44,18 @@ class CanvasScript {
         robot.on({
           mousedrag: ({target, point: {x}}) => {
             target.position.x = x;
-            target.label.position.x = x;
+            target.data.label.position.x = x;
             this.canvas.style.cursor = "move";
           },
           mouseenter: () => {
             this.canvas.style.cursor = "move";
+          },
+          click: ({event: {ctrlKey}}) => {
+            if (!ctrlKey) {
+              return;
+            }
+            this.hasBubble = !this.hasBubble;
+            let {hasBubble} = this;
           }
         });
 
@@ -57,8 +64,19 @@ class CanvasScript {
         iterationText.fillColor = 'white';
         iterationText.fontSize = 10;
         iterationText.content = robotNumber.toString().padStart(2, "0");
-        robot.label = iterationText;
+        robot.data.label = iterationText;
+        iterationText.on({
+          mousedrag: e => {
+            e.target = robot;
+            robot.emit("mousedrag", e)
+          },
+          click: e => {
+            robot.emit("click", e)
+          }
+        })
         robotNumber++;
+
+
       },
       mousemove: () => {
         this.canvas.style.cursor = "pointer";
