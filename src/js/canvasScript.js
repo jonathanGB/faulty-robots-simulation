@@ -67,7 +67,7 @@ class CanvasScript {
         let localX = x - this.MIN_X;
         this.updateRobotPosition({robot, x: localX});
 
-        if (this.hasBubble) {
+        if (this.hasBubble == robot) {
           controller.updateBubble({x: localX})
         }
       },
