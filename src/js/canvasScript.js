@@ -9,8 +9,86 @@ class CanvasScript {
     this.axis = null;
     this.separator = null;
     this.iterationText = null;
+    this.hasBubble = null;
 
     paper.setup(this.canvas);
+  }
+
+  replaceBubbleRobot(replacement) {
+    this.hasBubble.data.label.remove();
+    this.hasBubble.remove();
+    this.hasBubble = replacement;
+  }
+
+  toggleFaulty() {
+    let {data: {faulty, label: {content: label}}, position: {x}} = this.hasBubble;
+    let newRobotData = {
+      faulty: !faulty,
+      label,
+      x,
+    };
+
+    let newRobot = this.generateRobot(newRobotData);
+    this.replaceBubbleRobot(newRobot);
+  }
+
+  generateRobot({faulty, label, x}) {
+    let center = new Point(x, 50);
+    let radius = 15;
+    let robot = faulty ?
+      new Path.RegularPolygon(center, 4, radius + 5) :
+      new Path.Circle(center, radius);
+    robot.fillColor = faulty ?
+      "red" :
+      "green";
+    robot.data.faulty = faulty;
+    robot.strokeColor = "black";
+    robot.on({
+      mousedrag: ({target, point: {x}}) => {
+        target.position.x = x;
+        target.data.label.position.x = x;
+        this.canvas.style.cursor = "move";
+      },
+      mouseenter: () => {
+        this.canvas.style.cursor = "move";
+      },
+      click: ({event: {ctrlKey}, target}) => {
+        if (!ctrlKey) {
+          return;
+        }
+
+        if (this.hasBubble) {
+          controller.hideBubble();
+
+          if (this.hasBubble == target) {
+            this.hasBubble = null;
+            return;
+          }
+        }
+
+        controller.showBubble(target);
+        this.hasBubble = target;
+      }
+    });
+
+    let iterationText = new PointText(center.add(0, 3));
+    iterationText.justification = 'center';
+    iterationText.fillColor = 'white';
+    iterationText.fontSize = 10;
+    iterationText.content = label;
+    robot.data.label = iterationText;
+    iterationText.on({
+      mousedrag: e => {
+        e.target = robot;
+        robot.emit("mousedrag", e)
+      },
+      click: e => {
+        e.target = robot;
+        robot.emit("click", e)
+      }
+    })
+
+    return robot;
   }
 
   initialDraw() {
@@ -31,52 +109,15 @@ class CanvasScript {
     axisHitBox.fillColor = "white"
     axisHitBox.opacity = 0
     axisHitBox.on({
-      click: ({event: {shiftKey}, point: {x}}) => {
-        let center = new Point(x, 50);
-        let radius = 15;
-        let robot = shiftKey ?
-          new Path.RegularPolygon(center, 3, radius + 5) :
-          new Path.Circle(center, radius);
-        robot.fillColor = shiftKey ?
-          "red" :
-          "green";
-        robot.strokeColor = "black";
-        robot.on({
-          mousedrag: ({target, point: {x}}) => {
-            target.position.x = x;
-            target.data.label.position.x = x;
-            this.canvas.style.cursor = "move";
-          },
-          mouseenter: () => {
-            this.canvas.style.cursor = "move";
-          },
-          click: ({event: {ctrlKey}}) => {
-            if (!ctrlKey) {
-              return;
-            }
-            this.hasBubble = !this.hasBubble;
-            let {hasBubble} = this;
-          }
-        });
+      click: ({event: {shiftKey: faulty}, point: {x}}) => {
+        let newRobotData = {
+          faulty,
+          label: robotNumber.toString().padStart(2, "0"),
+          x,
+        };
 
-        let iterationText = new PointText(center.add(0, 3));
-        iterationText.justification = 'center';
-        iterationText.fillColor = 'white';
-        iterationText.fontSize = 10;
-        iterationText.content = robotNumber.toString().padStart(2, "0");
-        robot.data.label = iterationText;
-        iterationText.on({
-          mousedrag: e => {
-            e.target = robot;
-            robot.emit("mousedrag", e)
-          },
-          click: e => {
-            robot.emit("click", e)
-          }
-        })
+        this.generateRobot(newRobotData);
         robotNumber++;
-
-
       },
       mousemove: () => {
         this.canvas.style.cursor = "pointer";

@@ -41,8 +41,12 @@ main {
   padding: 5px 10px;
 }
 
+#currentRobot h4 > span {
+  cursor: pointer;
+}
+
 #currentRobot h4 {
-  margin-bottom: 2px;
+  margin-bottom: 10px;
 }
 
 #commandContainer {
@@ -66,4 +70,17 @@ main {
   border: 2px solid #777;
   border-top: 10px solid #777;
   border-radius: 0 0 10px 10px;
+}
+
+#robotLabel {
+  color: white;
+  border: 1px solid black;
+  background-color: #008000;
+  border-radius: 50%;
+  padding: 5px;
+}
+
+#robotLabel.faulty {
+  border-radius: 0;
+  background-color: #FF0000;
 }

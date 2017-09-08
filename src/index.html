@@ -19,11 +19,13 @@
           <button class="btn btn-primary disabled">Generate</button>
           <button class="btn btn-info disabled">Load setup <span class="caret"></span></button>
           <button class="btn btn-success disabled">Save setup</button>
+          <button class="btn btn-warning" onclick="location.reload()">Restart</button>
         </div>
-        <section id="currentRobot">
-          <h4><span id="robotLabel">01</span> <span class="label label-danger">Remove</span></h4>
-          X: <span id="robotX"></span><br>
-          Status: <span id="robotStatus"></span>
+        <section id="currentRobot" class="invisible">
+          <h4>
+            <span id="robotLabel"></span> <span class="label label-danger">Remove</span>
+          </h4>
+          X: <input id="robotX" type="text"></span><br>
         </section><section id="commandContainer">
           <textarea>Input a setup here...</textarea>
         </section>
