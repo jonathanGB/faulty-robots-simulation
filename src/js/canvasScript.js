@@ -6,6 +6,8 @@ class CanvasScript {
   constructor() {
     this.canvas = document.getElementById("myCanvas");
     this.ctx = this.canvas.getContext("2d");
+    this.MIN_X = 50;
+    this.MAX_X = 1200;
     this.axis = null;
     this.separator = null;
     this.iterationText = null;
@@ -18,6 +20,14 @@ class CanvasScript {
     this.hasBubble.data.label.remove();
     this.hasBubble.remove();
     this.hasBubble = replacement;
+  }
+
+  updateRobotPosition({robot, x}) {
+    let globalX = x + this.MIN_X;
+
+    robot.data.localPosition.x = x;
+    robot.position.x = globalX;
+    robot.data.label.position.x = globalX;
   }
 
   toggleFaulty() {
@@ -42,21 +52,29 @@ class CanvasScript {
       "red" :
       "green";
     robot.data.faulty = faulty;
+    robot.data.localPosition = {
+      x: x - this.MIN_X,
+    };
     robot.strokeColor = "black";
     robot.on({
       mousedrag: ({target, point: {x}}) => {
-        target.position.x = x;
-        target.data.label.position.x = x;
         this.canvas.style.cursor = "move";
+
+        if (x < this.MIN_X || x > this.MAX_X) {
+          return;
+        }
+
+        let localX = x - this.MIN_X;
+        this.updateRobotPosition({robot, x: localX});
+
+        if (this.hasBubble) {
+          controller.updateBubble({x: localX})
+        }
       },
       mouseenter: () => {
         this.canvas.style.cursor = "move";
       },
-      click: ({event: {ctrlKey}, target}) => {
-        if (!ctrlKey) {
-          return;
-        }
-
+      doubleclick: ({target}) => {
         if (this.hasBubble) {
           controller.hideBubble();
 
@@ -66,7 +84,7 @@ class CanvasScript {
           }
         }
 
-        controller.showBubble(target);
+        controller.showBubble(target.data);
         this.hasBubble = target;
       }
     });
@@ -82,9 +100,9 @@ class CanvasScript {
         e.target = robot;
         robot.emit("mousedrag", e)
       },
-      click: e => {
+      doubleclick: e => {
         e.target = robot;
-        robot.emit("click", e)
+        robot.emit("doubleclick", e)
       }
     })
 
@@ -99,9 +117,6 @@ class CanvasScript {
     axis.strokeJoin = "bevel"
     axis.add(new Point(50, 50));
     axis.add(new Point(1200, 50));
-    axis.add(new Point(1175, 30));
-    axis.add(new Point(1200, 50));
-    axis.add(new Point(1175, 70));
     this.axis = axis;
 
     let robotNumber = 1;

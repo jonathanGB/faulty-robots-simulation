@@ -11,6 +11,7 @@ class Controller {
 
     this.robotLabel.addEventListener("click", this);
     this.currentRobot.querySelector(".label-danger").addEventListener("click", this);
+    this.currentRobot.querySelector("#robotX").addEventListener("input", this);
 
     //document.addEventListener("click", this, {once: true});
     //document.addEventListener("dblclick", this, {once: true});
@@ -39,6 +40,23 @@ class Controller {
       }
       case "worker": {
         console.log(e.data)
+        break;
+      }
+      case "input": {
+        let {value} = target;
+        if (target.id == "robotX") {
+          value = Number(value);
+          if (isNaN(value) || value < 0 || value > canvasScript.MAX_X - canvasScript.MIN_X) {
+            target.style.backgroundColor = "red";
+            return;
+          }
+
+          target.style.backgroundColor = "";
+          canvasScript.updateRobotPosition({
+            robot: canvasScript.hasBubble,
+            x: value,
+          });
+        }
       }
     }
   }
@@ -48,13 +66,17 @@ class Controller {
     this.robotLabel.classList.remove("faulty");
   }
 
-  showBubble({data: {faulty, label: {content}}, position: {x}}) {
+  showBubble({faulty, label: {content}, localPosition: {x}}) {
     this.robotLabel.innerText = content;
     if (faulty) {
       this.robotLabel.classList.add("faulty");
     }
     this.currentRobot.querySelector("#robotX").value = x;
     this.currentRobot.classList.remove("invisible");
+  }
+
+  updateBubble({x}) {
+    this.currentRobot.querySelector("#robotX").value = x;
   }
 }
 
