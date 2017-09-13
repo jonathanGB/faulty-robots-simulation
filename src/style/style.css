@@ -1,6 +1,7 @@
 body {
   background-color: rgb(245, 250, 255);
 }
+
 header {
   text-align: center;
   margin-bottom: 50px;
@@ -31,9 +32,7 @@ main {
 #start section {
   margin-top: 10px;
   display: inline-block;
-  
-  height: 80px;
-  width: 50%;
+  vertical-align: bottom;
 }
 
 #currentRobot {
@@ -49,8 +48,21 @@ main {
   margin-bottom: 10px;
 }
 
+#robotVisionContainer, #currentRobot {
+  width: 25%;
+}
+
+#robotVisionContainer {
+  text-align: center;
+  padding: 0 10px 10px 10px;
+}
+
+#robotVisionValue {
+  margin-bottom: 5px;
+}
+
 #commandContainer {
-  vertical-align: bottom;
+  width: 50%;
 }
 
 #commandContainer textarea {

@@ -21,14 +21,19 @@
           <button class="btn btn-success disabled">Save setup</button>
           <button class="btn btn-warning" onclick="location.reload()">Restart</button>
         </div>
-        <section id="currentRobot" class="invisible">
-          <h4>
-            <span id="robotLabel"></span> <span class="label label-danger">Remove</span>
-          </h4>
-          X: <input id="robotX" type="text"></span><br>
-        </section><section id="commandContainer">
-          <textarea>Input a setup here...</textarea>
-        </section>
+        <div>
+          <section id="currentRobot" class="invisible">
+            <h4>
+              <span id="robotLabel"></span> <span class="label label-danger">Remove</span>
+            </h4>
+            x: <input id="robotX" type="text"></span>
+          </section><section id="robotVisionContainer">
+            v: <input id="robotVisionValue" type="number" min="1" max="600" value="100" step="1"><br>
+            <input id="robotVisionSlider" type="range" min="1" max="600" value="100" step="1">
+          </section><section id="commandContainer">
+            <textarea>Input a setup here...</textarea>
+          </section>
+        </div>
       </div>
 
       <div id="canvasContainer">

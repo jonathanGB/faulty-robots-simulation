@@ -6,12 +6,14 @@ class Controller {
     this.states = [];
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
+    this.robotVision = document.getElementById("robotVisionContainer");
 
     canvasScript.initialDraw();
 
     this.robotLabel.addEventListener("click", this);
     this.currentRobot.querySelector(".label-danger").addEventListener("click", this);
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
+    this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
 
     //document.addEventListener("click", this, {once: true});
     //document.addEventListener("dblclick", this, {once: true});
@@ -56,6 +58,20 @@ class Controller {
             robot: canvasScript.hasBubble,
             x: value,
           });
+
+          return;
+        }
+
+        if (target.parentNode.id == "robotVisionContainer") {
+          let range = parseInt(value, 10);
+
+          if (isNaN(range) || range < 1 || range > 600) {
+            this.robotVision.querySelectorAll("input").forEach(input => input.value = canvasScript.range);
+            return;
+          }
+
+          canvasScript.range = range;
+          this.robotVision.querySelectorAll("input").forEach(input => input.value = value);
         }
       }
     }

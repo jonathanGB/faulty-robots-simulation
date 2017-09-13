@@ -12,6 +12,7 @@ class CanvasScript {
     this.separator = null;
     this.iterationText = null;
     this.hasBubble = null;
+    this.range = 100;
 
     paper.setup(this.canvas);
   }
