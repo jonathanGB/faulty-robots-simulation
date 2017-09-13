@@ -13,13 +13,30 @@ class CanvasScript {
     this.iterationText = null;
     this.hasBubble = null;
     this.range = 100;
+    this.robots = new Set();
 
     paper.setup(this.canvas);
   }
 
+  updateRange(range) {
+    this.range = range;
+
+    for (let robot of this.robots) {
+      let {x} = robot.position;
+
+      robot.data.range.removeSegments();
+      robot.data.range.addSegments([
+        new Point(x - this.range, 50),
+        new Point(x + this.range, 50),
+      ]);
+    }
+  }
+
   replaceBubbleRobot(replacement) {
     this.hasBubble.data.label.remove();
+    this.hasBubble.data.range.remove();
     this.hasBubble.remove();
+    this.robots.delete(this.hasBubble);
     this.hasBubble = replacement;
   }
 
@@ -29,6 +46,12 @@ class CanvasScript {
     robot.data.localPosition.x = x;
     robot.position.x = globalX;
     robot.data.label.position.x = globalX;
+    robot.data.range.removeSegments();
+    robot.data.range.addSegments([
+      new Point(globalX - this.range, 50),
+      new Point(globalX + this.range, 50),
+    ]);
+
   }
 
   toggleFaulty() {
@@ -78,6 +101,7 @@ class CanvasScript {
       doubleclick: ({target}) => {
         if (this.hasBubble) {
           controller.hideBubble();
+          this.hasBubble.data.range.opacity = 0;
 
           if (this.hasBubble == target) {
             this.hasBubble = null;
@@ -87,8 +111,10 @@ class CanvasScript {
 
         controller.showBubble(target.data);
         this.hasBubble = target;
+        this.hasBubble.data.range.opacity = 1;
       }
     });
+    this.robots.add(robot);
 
     let iterationText = new PointText(center.add(0, 3));
     iterationText.justification = 'center';
@@ -105,7 +131,14 @@ class CanvasScript {
         e.target = robot;
         robot.emit("doubleclick", e)
       }
-    })
+    });
+
+    let range = new Path.Line(new Point(x - this.range, 50), new Point(x + this.range, 50));
+    range.sendToBack();
+    range.strokeColor = '#F0AD4E';
+    range.strokeWidth = 35;
+    range.opacity = 0;
+    robot.data.range = range;
 
     return robot;
   }

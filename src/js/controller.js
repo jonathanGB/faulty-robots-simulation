@@ -65,13 +65,15 @@ class Controller {
         if (target.parentNode.id == "robotVisionContainer") {
           let range = parseInt(value, 10);
 
-          if (isNaN(range) || range < 1 || range > 600) {
-            this.robotVision.querySelectorAll("input").forEach(input => input.value = canvasScript.range);
+          if (isNaN(range) || range < 1 || range > 575) {
+            target.style.backgroundColor = "red";
             return;
           }
 
+          target.style.backgroundColor = "";
           canvasScript.range = range;
           this.robotVision.querySelectorAll("input").forEach(input => input.value = value);
+          canvasScript.updateRange(range);
         }
       }
     }
