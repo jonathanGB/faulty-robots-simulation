@@ -5,7 +5,6 @@ paper.install(window);
 class CanvasScript {
   constructor() {
     this.canvas = document.getElementById("myCanvas");
-    this.ctx = this.canvas.getContext("2d");
     this.MIN_X = 50;
     this.MAX_X = 1200;
     this.axis = null;

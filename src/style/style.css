@@ -32,12 +32,11 @@ main {
 #start section {
   margin-top: 10px;
   display: inline-block;
-  vertical-align: bottom;
 }
 
 #currentRobot {
   text-align: left;
-  padding: 5px 10px;
+  padding: 0 10px;
 }
 
 #currentRobot h4 > span {
@@ -54,7 +53,7 @@ main {
 
 #robotVisionContainer {
   text-align: center;
-  padding: 0 10px 10px 10px;
+  padding: 10px;
 }
 
 #robotVisionValue {
@@ -70,6 +69,7 @@ main {
   height: 100%;
   vertical-align: bottom;
   resize: none;
+  border: 0;
   border-top: 1px solid #777;
   border-left: 1px solid #777;
   background-color: rgb(245, 250, 255);
@@ -95,4 +95,8 @@ main {
 #robotLabel.faulty {
   border-radius: 0;
   background-color: #FF0000;
+}
+
+.flex {
+  display: flex;
 }
