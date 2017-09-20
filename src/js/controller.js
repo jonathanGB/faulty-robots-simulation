@@ -56,7 +56,7 @@ class Controller {
           target.style.backgroundColor = "";
           canvasScript.updateRobotPosition({
             robot: canvasScript.hasBubble,
-            x: value,
+            localX: value,
           });
 
           return;

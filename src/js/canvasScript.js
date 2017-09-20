@@ -13,15 +13,51 @@ class CanvasScript {
     this.hasBubble = null;
     this.range = 100;
     this.robots = new Set();
+    this.origin = null;
 
     paper.setup(this.canvas);
+  }
+
+  updateOrigin() {
+    const currOriginX = this.origin.position.x;
+
+    const {originX: newOriginX} = [...this.robots].reduce((acc, {position: {x}, data: {faulty}}) => {
+      // first faulty found, make origin the position of that faulty robot for now
+      if (faulty && acc.default) {
+        return {
+          originX: x,
+          default: false,
+        };
+      }
+
+      if (faulty && x < acc.originX) {
+        acc.originX = x;
+        return acc;
+      }
+
+      return acc;
+    }, {originX: 50, default: true});
+
+    if (currOriginX != newOriginX) {
+      this.origin.position.x = newOriginX;
+
+      this.robots.forEach(robot => {
+        let localX = robot.position.x - newOriginX;
+
+        robot.data.localPosition.x = localX;
+
+        if (robot == this.hasBubble) {
+          controller.updateBubble({x: localX});
+        }
+      });
+    }
   }
 
   updateRange(range) {
     this.range = range;
 
     for (let robot of this.robots) {
-      let {x} = robot.position;
+      const {x} = robot.position;
 
       robot.data.range.removeSegments();
       robot.data.range.addSegments([
@@ -37,12 +73,14 @@ class CanvasScript {
     this.hasBubble.remove();
     this.robots.delete(this.hasBubble);
     this.hasBubble = replacement;
+
+    if (!replacement) {
+      this.updateOrigin();
+    }
   }
 
-  updateRobotPosition({robot, x}) {
-    let globalX = x + this.MIN_X;
-
-    robot.data.localPosition.x = x;
+  updateRobotPosition({robot, localX, globalX}) {
+    robot.data.localPosition.x = localX;
     robot.position.x = globalX;
     robot.data.label.position.x = globalX;
     robot.data.range.removeSegments();
@@ -63,6 +101,7 @@ class CanvasScript {
 
     let newRobot = this.generateRobot(newRobotData);
     this.replaceBubbleRobot(newRobot);
+    this.updateOrigin();
   }
 
   generateRobot({faulty, label, x}) {
@@ -87,8 +126,10 @@ class CanvasScript {
           return;
         }
 
-        let localX = x - this.MIN_X;
-        this.updateRobotPosition({robot, x: localX});
+        this.updateOrigin();
+
+        let localX = x - this.origin.position.x;
+        this.updateRobotPosition({robot, localX, globalX: x});
 
         if (this.hasBubble == robot) {
           controller.updateBubble({x: localX})
@@ -100,6 +141,9 @@ class CanvasScript {
       mousedown: ({target}) => {
         target.bringToFront();
         target.data.label.bringToFront();
+      },
+      mouseup: () => {
+        this.updateOrigin();
       },
       doubleclick: ({target}) => {
         if (this.hasBubble) {
@@ -118,6 +162,7 @@ class CanvasScript {
       }
     });
     this.robots.add(robot);
+    this.updateOrigin();
 
     let iterationText = new PointText(center.add(0, 3));
     iterationText.justification = 'center';
@@ -137,6 +182,9 @@ class CanvasScript {
       mousedown: e => {
         e.target = robot;
         robot.emit("mousedown", e);
+      },
+      mouseup: () => {
+        robot.emit("mouseup");
       }
     });
 
@@ -197,6 +245,14 @@ class CanvasScript {
     separator.add(new Point(0, 100));
     separator.add(new Point(1204, 100));
     this.separator = separator;
+
+    // draw origin mark
+    let origin = new Path();
+    origin.strokeColor = "black";
+    origin.strokeWidth = 2;
+    origin.add(new Point(this.MIN_X, 20));
+    origin.add(new Point(this.MIN_X, 80));
+    this.origin = origin;
   }
 }
 
