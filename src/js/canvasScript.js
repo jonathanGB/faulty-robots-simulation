@@ -97,6 +97,10 @@ class CanvasScript {
       mouseenter: () => {
         this.canvas.style.cursor = "move";
       },
+      mousedown: ({target}) => {
+        target.bringToFront();
+        target.data.label.bringToFront();
+      },
       doubleclick: ({target}) => {
         if (this.hasBubble) {
           controller.hideBubble();
@@ -129,6 +133,10 @@ class CanvasScript {
       doubleclick: e => {
         e.target = robot;
         robot.emit("doubleclick", e)
+      },
+      mousedown: e => {
+        e.target = robot;
+        robot.emit("mousedown", e);
       }
     });
 
