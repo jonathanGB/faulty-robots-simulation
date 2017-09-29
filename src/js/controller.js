@@ -47,8 +47,10 @@ class Controller {
       case "input": {
         let {value} = target;
         if (target.id == "robotX") {
-          value = Number(value);
-          if (isNaN(value) || value < 0 || value > canvasScript.MAX_X - canvasScript.MIN_X) {
+          const localX = Number(value);
+          const globalX = localX + canvasScript.origin.position.x;
+
+          if (isNaN(localX) || globalX < canvasScript.MIN_X || globalX > canvasScript.MAX_X) {
             target.style.backgroundColor = "red";
             return;
           }
@@ -56,7 +58,8 @@ class Controller {
           target.style.backgroundColor = "";
           canvasScript.updateRobotPosition({
             robot: canvasScript.hasBubble,
-            localX: value,
+            localX,
+            globalX,
           });
 
           return;

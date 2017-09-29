@@ -115,7 +115,7 @@ class CanvasScript {
       "green";
     robot.data.faulty = faulty;
     robot.data.localPosition = {
-      x: x - this.MIN_X,
+      x: x - this.origin.position.x,
     };
     robot.strokeColor = "black";
     robot.on({
