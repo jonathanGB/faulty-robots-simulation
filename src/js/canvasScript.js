@@ -221,6 +221,7 @@ class CanvasScript {
         };
 
         this.generateRobot(newRobotData);
+        controller.changeGenerateStatus();
         robotNumber++;
       },
       mousemove: () => {

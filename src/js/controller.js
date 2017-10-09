@@ -7,6 +7,7 @@ class Controller {
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
     this.robotVision = document.getElementById("robotVisionContainer");
+    this.generate = document.getElementById("generate");
 
     canvasScript.initialDraw();
 
@@ -14,6 +15,7 @@ class Controller {
     this.currentRobot.querySelector(".label-danger").addEventListener("click", this);
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
     this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
+    this.generate.addEventListener("click", this);
 
     //document.addEventListener("click", this, {once: true});
     //document.addEventListener("dblclick", this, {once: true});
@@ -30,9 +32,13 @@ class Controller {
         if (target == this.robotLabel) {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
+        } else if (target == this.generate) {
+          // TODO: generate
+          alert("generate");
         } else if (target.classList.contains("label-danger")) {
           canvasScript.replaceBubbleRobot(null);
           this.hideBubble();
+          this.changeGenerateStatus()
         }
         break;
       };
@@ -80,6 +86,10 @@ class Controller {
         }
       }
     }
+  }
+
+  changeGenerateStatus() {
+    this.generate.disabled = canvasScript.robots.size < 2;
   }
 
   hideBubble() {
