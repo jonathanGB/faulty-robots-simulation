@@ -28,6 +28,9 @@ class CanvasScript {
       robot._callbacks = {
         doubleclick: robot._callbacks.doubleclick,
       };
+      robot.data.label._callbacks = {
+        doubleclick: robot.data.label._callbacks.doubleclick,
+      };
     }
   }
 
