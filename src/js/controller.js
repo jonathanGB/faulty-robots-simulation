@@ -8,11 +8,12 @@ class Controller {
     this.robotLabel = document.getElementById("robotLabel");
     this.robotVision = document.getElementById("robotVisionContainer");
     this.generate = document.getElementById("generate");
+    this.commandInput = document.querySelector("#commandContainer textarea");
 
     canvasScript.initialDraw();
 
     this.robotLabel.addEventListener("click", this);
-    this.currentRobot.querySelector(".label-danger").addEventListener("click", this);
+    this.currentRobot.querySelector("#remove").addEventListener("click", this);
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
     this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
     this.generate.addEventListener("click", this);
@@ -33,8 +34,7 @@ class Controller {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
         } else if (target == this.generate) {
-          // TODO: generate
-          alert("generate");
+          this.startGenerate();
         } else if (target.classList.contains("label-danger")) {
           canvasScript.replaceBubbleRobot(null);
           this.hideBubble();
@@ -86,6 +86,24 @@ class Controller {
         }
       }
     }
+  }
+
+  startGenerate() {
+    // remove listeners
+    console.log("start generate");
+    this.currentRobot.querySelector("#remove").remove();
+    this.robotLabel.removeEventListener("click", this);
+    this.currentRobot.querySelector("#robotX").removeEventListener("input", this);
+    this.currentRobot.querySelector("#robotX").readOnly = true;
+    this.robotVision.querySelectorAll("input").forEach(input => {
+      input.removeEventListener("input", this)
+      input.type == "range" ? input.disabled = true : input.readOnly = true;
+    });
+    this.generate.removeEventListener("click", this);
+    this.generate.disabled = true;
+    this.commandInput.readOnly = true;
+
+    canvasScript.removeSetupListeners();
   }
 
   changeGenerateStatus() {

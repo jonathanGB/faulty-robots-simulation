@@ -8,6 +8,7 @@ class CanvasScript {
     this.MIN_X = 50;
     this.MAX_X = 1200;
     this.axis = null;
+    this.axisHitBox = null;
     this.separator = null;
     this.iterationText = null;
     this.hasBubble = null;
@@ -16,6 +17,18 @@ class CanvasScript {
     this.origin = null;
 
     paper.setup(this.canvas);
+  }
+
+  removeSetupListeners() {
+    this.axisHitBox.remove();
+    this.axisHitBox = null;
+    this.canvas.style.cursor = "default";
+
+    for (let robot of this.robots) {
+      robot._callbacks = {
+        doubleclick: robot._callbacks.doubleclick,
+      };
+    }
   }
 
   updateOrigin() {
@@ -210,8 +223,8 @@ class CanvasScript {
 
     let robotNumber = 1;
     let axisHitBox = new Path.Rectangle(new Rectangle(50, 40, 1150, 30));
-    axisHitBox.fillColor = "white"
-    axisHitBox.opacity = 0
+    axisHitBox.fillColor = "white";
+    axisHitBox.opacity = 0;
     axisHitBox.on({
       click: ({event: {shiftKey: faulty}, point: {x}}) => {
         let newRobotData = {
@@ -230,7 +243,8 @@ class CanvasScript {
       mouseleave: () => {
         this.canvas.style.cursor = "default";
       }
-    })
+    });
+    this.axisHitBox = axisHitBox;
 
     // draw iteration number
     let iterationText = new PointText(new Point(7, 55));
