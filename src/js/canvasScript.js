@@ -12,8 +12,7 @@ class CanvasScript {
     this.separator = null;
     this.iterationText = null;
     this.hasBubble = null;
-    this.range = 100;
-    this.robots = new Set();
+    this.robots = new Map();
     this.origin = null;
 
     paper.setup(this.canvas);
@@ -24,7 +23,7 @@ class CanvasScript {
     this.axisHitBox = null;
     this.canvas.style.cursor = "default";
 
-    for (let robot of this.robots) {
+    for (let [,robot] of this.robots) {
       robot._callbacks = {
         doubleclick: robot._callbacks.doubleclick,
       };
@@ -37,7 +36,7 @@ class CanvasScript {
   updateOrigin() {
     const currOriginX = this.origin.position.x;
 
-    const {originX: newOriginX} = [...this.robots].reduce((acc, {position: {x}, data: {faulty}}) => {
+    const {originX: newOriginX} = [...this.robots].reduce((acc, [,{position: {x}, data: {faulty}}]) => {
       // first faulty found, make origin the position of that faulty robot for now
       if (faulty && acc.default) {
         return {
@@ -57,7 +56,7 @@ class CanvasScript {
     if (currOriginX != newOriginX) {
       this.origin.position.x = newOriginX;
 
-      this.robots.forEach(robot => {
+      for (let [, robot] of this.robots) {
         let localX = robot.position.x - newOriginX;
 
         robot.data.localPosition.x = localX;
@@ -65,29 +64,29 @@ class CanvasScript {
         if (robot == this.hasBubble) {
           controller.updateBubble({x: localX});
         }
-      });
+      }
     }
   }
 
   updateRange(range) {
-    this.range = range;
+    controller.range = range;
 
-    for (let robot of this.robots) {
+    for (let [, robot] of this.robots) {
       const {x} = robot.position;
 
       robot.data.range.removeSegments();
       robot.data.range.addSegments([
-        new Point(x - this.range, 50),
-        new Point(x + this.range, 50),
+        new Point(x - range, 50),
+        new Point(x + range, 50),
       ]);
     }
   }
 
   replaceBubbleRobot(replacement) {
+    this.robots.delete(this.hasBubble.data.label._content);
     this.hasBubble.data.label.remove();
     this.hasBubble.data.range.remove();
     this.hasBubble.remove();
-    this.robots.delete(this.hasBubble);
     this.hasBubble = replacement;
 
     if (!replacement) {
@@ -101,8 +100,8 @@ class CanvasScript {
     robot.data.label.position.x = globalX;
     robot.data.range.removeSegments();
     robot.data.range.addSegments([
-      new Point(globalX - this.range, 50),
-      new Point(globalX + this.range, 50),
+      new Point(globalX - controller.range, 50),
+      new Point(globalX + controller.range, 50),
     ]);
 
   }
@@ -177,7 +176,7 @@ class CanvasScript {
         this.hasBubble.data.range.opacity = 1;
       }
     });
-    this.robots.add(robot);
+    this.robots.set(label, robot);
     this.updateOrigin();
 
     let iterationText = new PointText(center.add(0, 3));
@@ -204,7 +203,7 @@ class CanvasScript {
       }
     });
 
-    let range = new Path.Line(new Point(x - this.range, 50), new Point(x + this.range, 50));
+    let range = new Path.Line(new Point(x - controller.range, 50), new Point(x + controller.range, 50));
     range.sendToBack();
     range.strokeColor = '#F0AD4E';
     range.strokeWidth = 35;

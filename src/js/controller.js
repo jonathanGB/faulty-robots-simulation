@@ -4,10 +4,12 @@ class Controller {
   constructor() {
     this.iteration = 0;
     this.states = [];
+    this.range = 100;
+
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
     this.robotVision = document.getElementById("robotVisionContainer");
-    this.generate = document.getElementById("generate");
+    this.generateButton = document.getElementById("generate");
     this.commandInput = document.querySelector("#commandContainer textarea");
 
     canvasScript.initialDraw();
@@ -16,15 +18,14 @@ class Controller {
     this.currentRobot.querySelector("#remove").addEventListener("click", this);
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
     this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
-    this.generate.addEventListener("click", this);
+    this.generateButton.addEventListener("click", this);
 
-    //document.addEventListener("click", this, {once: true});
-    //document.addEventListener("dblclick", this, {once: true});
-    // this.worker = new Worker("js/calculator.js")
-    // this.worker.postMessage("wazza")
-    // this.worker.onmessage = ({data}) => {
-    //   this.handleEvent({type: "worker", data});
-    // }
+    this.worker = new Worker("js/calculator.js");
+    this.worker.onmessage = ({data: {type, response}}) => {
+      if (type == "generate") {
+        this.states[response.iter] = response.newState;
+      }
+    };
   }
 
   handleEvent({type, target}) {
@@ -33,7 +34,7 @@ class Controller {
         if (target == this.robotLabel) {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
-        } else if (target == this.generate) {
+        } else if (target == this.generateButton) {
           this.startGenerate();
         } else if (target.classList.contains("label-danger")) {
           canvasScript.replaceBubbleRobot(null);
@@ -44,10 +45,6 @@ class Controller {
       };
       case "dblclick": {
         canvasScript.scale();
-        break;
-      }
-      case "worker": {
-        console.log(e.data)
         break;
       }
       case "input": {
@@ -80,7 +77,7 @@ class Controller {
           }
 
           target.style.backgroundColor = "";
-          canvasScript.range = range;
+          this.range = range;
           this.robotVision.querySelectorAll("input").forEach(input => input.value = value);
           canvasScript.updateRange(range);
         }
@@ -99,15 +96,35 @@ class Controller {
       input.removeEventListener("input", this)
       input.type == "range" ? input.disabled = true : input.readOnly = true;
     });
-    this.generate.removeEventListener("click", this);
-    this.generate.disabled = true;
+    this.generateButton.removeEventListener("click", this);
+    this.generateButton.disabled = true;
     this.commandInput.readOnly = true;
 
     canvasScript.removeSetupListeners();
+
+    
+    this.states[0] = [...canvasScript.robots].map(([label, {data: {faulty, localPosition: {x}}}]) => ({
+      label,
+      faulty,
+      x,
+    }));
+    orderedRobots.sort((a, b) => a.x - b.x);
+
+    this.generate(1, 10, this.states[0]);
+  }
+
+  generate(iter, todo, state) {
+    this.worker.postMessage({
+      type: "generate",
+      range: this.range,
+      iter,
+      todo,
+      state,
+    });
   }
 
   changeGenerateStatus() {
-    this.generate.disabled = canvasScript.robots.size < 2;
+    this.generateButton.disabled = canvasScript.robots.size < 2;
   }
 
   hideBubble() {
