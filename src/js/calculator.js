@@ -6,6 +6,13 @@ onmessage = ({data}) => {
   }
 }
 
+/**
+ * Compute the next generation of robots' positions
+ * @param {Number} iter current iteration
+ * @param {Number} todo how many left to generate
+ * @param {Array{Object}} state current state of robots' positions
+ * @param {Number} range vision v of all robots
+ */
 function generate(iter, todo, state, range) {
   if (todo == 0) {
     return;
@@ -19,8 +26,8 @@ function generate(iter, todo, state, range) {
     }
 
     const {lefts, rights} = findRobotsVisible(state, i, range);
-    const leftMost = lefts.length ? lefts[0].x : state[i].x;
-    const rightMost = rights.length ? rights[rights.length - 1].x : state[i].x;
+    const leftMost = lefts.length ? lefts[0].x : state[i].x; // if no robots on the left, left-most is itself
+    const rightMost = rights.length ? rights[rights.length - 1].x : state[i].x; // if no robots on the right, right-most is itself
     const newX = (leftMost + rightMost) / 2;
     newState.push({...state[i], x: newX});
   }
