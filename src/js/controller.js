@@ -5,6 +5,7 @@ class Controller {
     this.iteration = 0;
     this.states = [];
     this.range = 100;
+    this.listener = new EventEmitter();
 
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
@@ -24,6 +25,8 @@ class Controller {
     this.worker.onmessage = ({data: {type, response}}) => {
       if (type == "generate") {
         this.states[response.iter] = response.newState;
+
+        this.listener.dispatch(`${response.iter}-generated`, response.newState);
       }
     };
   }
@@ -85,7 +88,7 @@ class Controller {
     }
   }
 
-  startGenerate() {
+  async startGenerate() {
     // remove listeners
     console.log("start generate");
     this.currentRobot.querySelector("#remove").remove();
@@ -93,7 +96,7 @@ class Controller {
     this.currentRobot.querySelector("#robotX").removeEventListener("input", this);
     this.currentRobot.querySelector("#robotX").readOnly = true;
     this.robotVision.querySelectorAll("input").forEach(input => {
-      input.removeEventListener("input", this)
+      input.removeEventListener("input", this);
       input.type == "range" ? input.disabled = true : input.readOnly = true;
     });
     this.generateButton.removeEventListener("click", this);
@@ -101,16 +104,16 @@ class Controller {
     this.commandInput.readOnly = true;
 
     canvasScript.removeSetupListeners();
-
     
     this.states[0] = [...canvasScript.robots].map(([label, {data: {faulty, localPosition: {x}}}]) => ({
       label,
       faulty,
       x,
     }));
-    orderedRobots.sort((a, b) => a.x - b.x);
+    this.states[0].sort((a, b) => a.x - b.x);
 
     this.generate(1, 10, this.states[0]);
+    const nextGen = await this.fetchNextGeneration();
   }
 
   generate(iter, todo, state) {
@@ -120,6 +123,33 @@ class Controller {
       iter,
       todo,
       state,
+    });
+  }
+
+  fetchNextGeneration() {
+    return new Promise(resolve => {
+      let currState = this.states[++this.iteration];
+      const i = this.iteration;
+
+      // if result already cached, return it
+      if (currState) {
+        resolve(currState);
+
+        // we are at the end of the batch, generate a new one
+        if (i % 10 == 0) {
+          this.generate(i + 1, 10, this.states[i]);
+        }
+
+        return;
+      }
+
+      // current generation is not cached, wait until it has been computed
+      this.listener.on(`${this.iteration}-generated`, state => {
+        resolve(state);
+        if (i % 10 == 0) {
+          this.generate(i + 1, 10, this.states[i]);
+        }
+      }, true);
     });
   }
 
