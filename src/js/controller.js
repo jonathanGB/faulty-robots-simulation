@@ -14,7 +14,8 @@ class Controller {
     this.commandInput = document.querySelector("#commandContainer textarea");
 
     canvasScript.initialDraw();
-
+    
+    document.addEventListener("keypress", this); 
     this.robotLabel.addEventListener("click", this);
     this.currentRobot.querySelector("#remove").addEventListener("click", this);
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
@@ -34,16 +35,27 @@ class Controller {
   handleEvent({type, target, key}) {
     switch (type) {
       case "keypress": {
-        if (key == "Enter") {
-          this.getNextGeneration();
+        if (target.tagName == "TEXTAREA" || target.tagName == "INPUT") {
+          return;
         }
+
+        if (key == "Enter" && this.iteration > 0) {
+          this.getNextGeneration();
+        } else if (key == "z") {
+          canvasScript.zoom("in");
+        } else if (key == "x") {
+          canvasScript.zoom("out");
+        } else if (key.startsWith("Arrow")) {
+          canvasScript.moveView(key);
+        }
+
+        break;
       }
       case "click": {
         if (target == this.robotLabel) {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
         } else if (target == this.generateButton) {
-          document.addEventListener("keypress", this);
           this.startGenerate();
         } else if (target.classList.contains("label-danger")) {
           canvasScript.replaceBubbleRobot(null);
@@ -52,10 +64,6 @@ class Controller {
         }
         break;
       };
-      case "dblclick": {
-        canvasScript.scale();
-        break;
-      }
       case "input": {
         let {value} = target;
         if (target.id == "robotX") {

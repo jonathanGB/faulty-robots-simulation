@@ -18,6 +18,40 @@ class CanvasScript {
     paper.setup(this.canvas);
   }
 
+  moveView(direction) {
+    let deltaX = 0;
+    let deltaY = 0;
+
+    switch(direction) {
+      case "ArrowUp": {
+        deltaY = 50;
+        break;
+      }
+      case "ArrowDown": {
+        deltaY = -50;
+        break;
+      }
+      case "ArrowLeft": {
+        deltaX = 50;
+        break;
+      }
+      case "ArrowRight": {
+        deltaX = -50;
+        break;
+      }
+    }
+
+    view.translate(deltaX, deltaY);
+  }
+
+  zoom(direction) {
+    if (direction == "in") {
+      view.zoom += 0.25;
+    } else {
+      view.zoom = Math.max(0.25, view.zoom - 0.25);
+    }
+  }
+
   recenterView(bottomY) {
     if (bottomY > view.bounds.y + view.bounds.height) {
       view.center = new Point(view.center.x, bottomY - (view.bounds.height / 2));
