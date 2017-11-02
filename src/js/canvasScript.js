@@ -18,6 +18,11 @@ class CanvasScript {
     paper.setup(this.canvas);
   }
 
+  recenterView(bottomY) {
+    if (bottomY > view.bounds.y + view.bounds.height) {
+      view.center = new Point(view.center.x, bottomY - (view.bounds.height / 2));
+    }
+  }
 
   displayNewGeneration(iteration, newGen) {
     console.log(newGen)
@@ -25,9 +30,12 @@ class CanvasScript {
     const iterationText = iteration.toString().padStart(3, "0");
     const deltaY = iteration * 100;
     this.axis.clone().translate(0, deltaY);
-    this.separator.clone().translate(0, deltaY);
+    const separator = this.separator.clone();
+    separator.translate(0, deltaY);
     this.iterationText.clone().translate(0, deltaY).set({content: iterationText});
     this.origin.clone().translate(0, deltaY);
+
+    this.recenterView(separator.position.y);
 
     for (const {label, faulty, x} of newGen) {
       const initialRobot = this.robots.get(label);
