@@ -21,7 +21,7 @@ function generate(iter, todo, state, range) {
   const newState = [];
   for (let i = 0; i < state.length; ++i) {
     if (state[i].faulty) {
-      newState.push({...state[i]});
+      newState.push({...state[i]}); // push copied object
       continue;
     }
 
