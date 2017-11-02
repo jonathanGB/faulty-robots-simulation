@@ -31,13 +31,19 @@ class Controller {
     };
   }
 
-  handleEvent({type, target}) {
+  handleEvent({type, target, key}) {
     switch (type) {
+      case "keypress": {
+        if (key == "Enter") {
+          this.getNextGeneration();
+        }
+      }
       case "click": {
         if (target == this.robotLabel) {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
         } else if (target == this.generateButton) {
+          document.addEventListener("keypress", this);
           this.startGenerate();
         } else if (target.classList.contains("label-danger")) {
           canvasScript.replaceBubbleRobot(null);
@@ -88,6 +94,11 @@ class Controller {
     }
   }
 
+  async getNextGeneration() {
+    const {i, nextGen} = await this.fetchNextGeneration();
+    canvasScript.displayNewGeneration(i, nextGen);
+  }
+
   async startGenerate() {
     // remove listeners
     console.log("start generate");
@@ -113,7 +124,8 @@ class Controller {
     this.states[0].sort((a, b) => a.x - b.x);
 
     this.generate(1, 10, this.states[0]);
-    const nextGen = await this.fetchNextGeneration();
+    const {nextGen} = await this.fetchNextGeneration();
+    canvasScript.displayNewGeneration(1, nextGen);
   }
 
   generate(iter, todo, state) {
@@ -133,7 +145,7 @@ class Controller {
 
       // if result already cached, return it
       if (currState) {
-        resolve(currState);
+        resolve({i, nextGen: currState});
 
         // we are at the end of the batch, generate a new one
         if (i % 10 == 0) {
@@ -145,7 +157,7 @@ class Controller {
 
       // current generation is not cached, wait until it has been computed
       this.listener.on(`${this.iteration}-generated`, state => {
-        resolve(state);
+        resolve({i, nextGen: state});
         if (i % 10 == 0) {
           this.generate(i + 1, 10, this.states[i]);
         }

@@ -18,6 +18,62 @@ class CanvasScript {
     paper.setup(this.canvas);
   }
 
+
+  displayNewGeneration(iteration, newGen) {
+    console.log(newGen)
+
+    const iterationText = iteration.toString().padStart(3, "0");
+    const deltaY = iteration * 100;
+    this.axis.clone().translate(0, deltaY);
+    this.separator.clone().translate(0, deltaY);
+    this.iterationText.clone().translate(0, deltaY).set({content: iterationText});
+    this.origin.clone().translate(0, deltaY);
+
+    for (const {label, faulty, x} of newGen) {
+      const initialRobot = this.robots.get(label);
+      const robot = initialRobot.clone();
+      const robotLabel = initialRobot.data.label.clone();
+      const robotRange = initialRobot.data.range.clone();
+      const robotLocalPosition = {...initialRobot.data.localPosition};
+      const absoluteX = x + this.origin.position.x;
+      const deltaX = absoluteX - robot.position.x;
+      
+      robot.data.label = robotLabel;
+      robot.data.range = robotRange;
+      robot.data.localPosition = robotLocalPosition;
+      robot.translate(deltaX, deltaY);
+      robotLabel.translate(deltaX, deltaY);
+      robotRange.translate(deltaX, deltaY);
+      robotLocalPosition.x = x;
+      robotLabel.set({content: label});
+      robotRange.opacity = 0;      
+
+      robot.on({
+        doubleclick: ({target}) => {
+          if (this.hasBubble) {
+            controller.hideBubble();
+            this.hasBubble.data.range.opacity = 0;
+  
+            if (this.hasBubble == target) {
+              this.hasBubble = null;
+              return;
+            }
+          }
+  
+          controller.showBubble(target.data);
+          this.hasBubble = target;
+          this.hasBubble.data.range.opacity = 1;
+        }
+      });
+      robotLabel.on({
+        doubleclick: e => {
+          e.target = robot;
+          robot.emit("doubleclick", e)
+        },
+      });
+    }
+  }
+
   removeSetupListeners() {
     this.axisHitBox.remove();
     this.axisHitBox = null;
