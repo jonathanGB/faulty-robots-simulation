@@ -2,22 +2,30 @@
 
 paper.install(window);
 
+/**
+ * This class handles data and operations related to the paper-canvas
+ */
 class CanvasScript {
   constructor() {
     this.canvas = document.getElementById("myCanvas");
-    this.MIN_X = 50;
-    this.MAX_X = 1200;
-    this.axis = null;
-    this.axisHitBox = null;
-    this.separator = null;
-    this.iterationText = null;
-    this.hasBubble = null;
-    this.robots = new Map();
-    this.origin = null;
+    this.MIN_X = 50; // absolute x-coordinate of the beginning of the axis
+    this.MAX_X = 1200; // absolute x-coordinate of the end of the axis
+    this.axis = null; // reference to the axis object of the 0th generation
+    this.axisHitBox = null; // reference to the axis-hitbox object of the 0th generation
+    this.separator = null; // reference to the axis-hitbox object of the 0th generation
+    this.iterationText = null; // reference to the iterationText object of the 0th generation
+    this.hasBubble = null; // reference to the robot displayed in the bubble
+    this.robots = new Map(); // map label -> robot object
+    this.origin = null; // reference to the origin object of the 0th generation
 
     paper.setup(this.canvas);
   }
 
+  /**
+   * Move the view in the direction provided
+   * 
+   * @param {String} direction in which direction we want to move the view 
+   */
   moveView(direction) {
     let deltaX = 0;
     let deltaY = 0;
@@ -44,25 +52,42 @@ class CanvasScript {
     view.translate(deltaX, deltaY);
   }
 
+  /**
+   * Zoom the view in the direction provided
+   * 
+   * @param {String} direction "in" or "out"
+   */
   zoom(direction) {
     if (direction == "in") {
       view.zoom += 0.25;
     } else {
-      view.zoom = Math.max(0.25, view.zoom - 0.25);
+      view.zoom = Math.max(0.25, view.zoom - 0.25); // zoom out, unless it would overflow
     }
   }
 
+  /**
+   * If we create a new generation and it would be underneath the current view, recenter the view
+   * so it becomes visible
+   * 
+   * @param {Number} bottomY bottom of the new generation
+   */
   recenterView(bottomY) {
     if (bottomY > view.bounds.y + view.bounds.height) {
       view.center = new Point(view.center.x, bottomY - (view.bounds.height / 2));
     }
   }
 
+  /**
+   * New generation requested, display it
+   * 
+   * @param {Integer} iteration number of the new generation 
+   * @param {Array{Object}} newGen new robots to add to the canvas 
+   */
   displayNewGeneration(iteration, newGen) {
     console.log(newGen)
 
     const iterationText = iteration.toString().padStart(3, "0");
-    const deltaY = iteration * 100;
+    const deltaY = iteration * 100; // delta in height when we translate the initial objects
     this.axis.clone().translate(0, deltaY);
     const separator = this.separator.clone();
     separator.translate(0, deltaY);
@@ -71,15 +96,18 @@ class CanvasScript {
 
     this.recenterView(separator.position.y);
 
+    // display all robots of the new generation
     for (const {label, faulty, x} of newGen) {
+      // get canvas-related info and clone objects
       const initialRobot = this.robots.get(label);
       const robot = initialRobot.clone();
       const robotLabel = initialRobot.data.label.clone();
       const robotRange = initialRobot.data.range.clone();
       const robotLocalPosition = {...initialRobot.data.localPosition};
-      const absoluteX = x + this.origin.position.x;
-      const deltaX = absoluteX - robot.position.x;
+      const absoluteX = x + this.origin.position.x; // absolute x-position of the new robot
+      const deltaX = absoluteX - robot.position.x; // delta in x of the new robot to its x-position in the previous generation (to translate)
       
+      // assign data to the new robot
       robot.data.label = robotLabel;
       robot.data.range = robotRange;
       robot.data.localPosition = robotLocalPosition;
@@ -90,6 +118,7 @@ class CanvasScript {
       robotLabel.set({content: label});
       robotRange.opacity = 0;      
 
+      // assign double-click event handler to the robot
       robot.on({
         doubleclick: ({target}) => {
           if (this.hasBubble) {
@@ -116,6 +145,9 @@ class CanvasScript {
     }
   }
 
+  /**
+   * We want to remove the listeners related to setup once the setup is finished
+   */
   removeSetupListeners() {
     this.axisHitBox.remove();
     this.axisHitBox = null;
@@ -131,9 +163,15 @@ class CanvasScript {
     }
   }
 
+  /**
+   * Setup only!
+   * Possibly change the origin (leftmost faulty); if so, change the local positions of robots (relative)
+   */
   updateOrigin() {
+    console.log("update origin")
     const currOriginX = this.origin.position.x;
 
+    // find new origin-x
     const {originX: newOriginX} = [...this.robots].reduce((acc, [,{position: {x}, data: {faulty}}]) => {
       // first faulty found, make origin the position of that faulty robot for now
       if (faulty && acc.default) {
@@ -151,12 +189,12 @@ class CanvasScript {
       return acc;
     }, {originX: 50, default: true});
 
+    // if the origin should be changed, change it and update relative positions of robots
     if (currOriginX != newOriginX) {
       this.origin.position.x = newOriginX;
 
       for (let [, robot] of this.robots) {
         let localX = robot.position.x - newOriginX;
-
         robot.data.localPosition.x = localX;
 
         if (robot == this.hasBubble) {
@@ -166,9 +204,13 @@ class CanvasScript {
     }
   }
 
+  /**
+   * Setup only!
+   * The range has been changed, update the vision segments of the robots
+   * 
+   * @param {Number} range new vision v for all robots
+   */
   updateRange(range) {
-    controller.range = range;
-
     for (let [, robot] of this.robots) {
       const {x} = robot.position;
 
@@ -180,18 +222,35 @@ class CanvasScript {
     }
   }
 
+  /**
+   * Setup only!
+   * 
+   * Used when deleting a robot (null), or to toggle faulty (Robot)
+   * @param {Robot|null} replacement 
+   */
   replaceBubbleRobot(replacement) {
-    this.robots.delete(this.hasBubble.data.label._content);
+    replacement ?
+      this.robots.set(replacement.data.label.content, replacement) :            
+      this.robots.delete(this.hasBubble.data.label.content);
+
+    // delete previous bubble data 
     this.hasBubble.data.label.remove();
     this.hasBubble.data.range.remove();
     this.hasBubble.remove();
-    this.hasBubble = replacement;
 
-    if (!replacement) {
-      this.updateOrigin();
-    }
+    // update bubble
+    this.hasBubble = replacement
+    this.updateOrigin();
   }
 
+  /**
+   * Setup only!
+   * 
+   * @param {Object} param0:
+   *  robot is the robot object that we want to update
+   *  localX is the local-x of the robot
+   *  globalX is the absolute-x of the robot
+   */
   updateRobotPosition({robot, localX, globalX}) {
     robot.data.localPosition.x = localX;
     robot.position.x = globalX;
@@ -204,6 +263,11 @@ class CanvasScript {
 
   }
 
+  /**
+   * Setup only!
+   * Called by `controller` when user toggles the faulty state in the bubble
+   * We need to replace the robot (because the shape changes)
+   */
   toggleFaulty() {
     let {data: {faulty, label: {content: label}}, position: {x}} = this.hasBubble;
     let newRobotData = {
@@ -212,15 +276,24 @@ class CanvasScript {
       x,
     };
 
-    let newRobot = this.generateRobot(newRobotData);
+    let newRobot = this.generateRobot(newRobotData, true);
     this.replaceBubbleRobot(newRobot);
-    this.updateOrigin();
   }
 
-  generateRobot({faulty, label, x}) {
-    let center = new Point(x, 50);
+  /**
+   * Setup only!
+   * Creates a new robot (or a replacement) and returns it
+   * 
+   * @param {Object} param0:
+   *  faulty is if the robot to create is faulty
+   *  label is the label of the robot to create
+   *  x is the x-coordinate of the robot to create
+   * @param {Bool} isReplacement behaviour of generate varies slightly if it's a new robot or one we replace
+   */
+  generateRobot({faulty, label, x}, isReplacement=false) {
+    let center = new Point(x, 50); // 50 is the y-coordinate of the axis during setup
     let radius = 15;
-    let robot = faulty ?
+    let robot = faulty ? // faulty robot are squares; non-faulty are circles
       new Path.RegularPolygon(center, 4, radius + 5) :
       new Path.Circle(center, radius);
     robot.fillColor = faulty ?
@@ -231,10 +304,13 @@ class CanvasScript {
       x: x - this.origin.position.x,
     };
     robot.strokeColor = "black";
+    
+    // assign listeners to robot during setup (some of them are removed once setup is complete)
     robot.on({
       mousedrag: ({target, point: {x}}) => {
         this.canvas.style.cursor = "move";
 
+        // don't exit the axis limits
         if (x < this.MIN_X || x > this.MAX_X) {
           return;
         }
@@ -252,13 +328,16 @@ class CanvasScript {
         this.canvas.style.cursor = "move";
       },
       mousedown: ({target}) => {
+        // bring to front so dragging it over other robots doesn't break
         target.bringToFront();
         target.data.label.bringToFront();
       },
       mouseup: () => {
+        // otherwise, the origin could be a few pixels off if we dragged the robot-origin
         this.updateOrigin();
       },
       doubleclick: ({target}) => {
+        // if new target we want to display its bubble; otherwise, we hide the bubble (toggle)
         if (this.hasBubble) {
           controller.hideBubble();
           this.hasBubble.data.range.opacity = 0;
@@ -274,16 +353,24 @@ class CanvasScript {
         this.hasBubble.data.range.opacity = 1;
       }
     });
-    this.robots.set(label, robot);
-    this.updateOrigin();
 
-    let iterationText = new PointText(center.add(0, 3));
-    iterationText.justification = 'center';
-    iterationText.fillColor = 'white';
-    iterationText.fontSize = 10;
-    iterationText.content = label;
-    robot.data.label = iterationText;
-    iterationText.on({
+    // don't update map or origin if it's only a replacement robot (toggle)
+    // if it' a replacement, it's already handled by `replaceBubbleRobot`
+    if (!isReplacement) {
+      this.robots.set(label, robot);          
+      this.updateOrigin();
+    }
+
+    // create label for robot
+    let labelText = new PointText(center.add(0, 3));
+    labelText.justification = 'center';
+    labelText.fillColor = 'white';
+    labelText.fontSize = 10;
+    labelText.content = label;
+    robot.data.label = labelText;
+    
+    // if label receives an event, dispatch it to its related robot
+    labelText.on({
       mousedrag: e => {
         e.target = robot;
         robot.emit("mousedrag", e)
@@ -301,6 +388,7 @@ class CanvasScript {
       }
     });
 
+    // create the range of the vision (rectangle centered on the robot)
     let range = new Path.Line(new Point(x - controller.range, 50), new Point(x + controller.range, 50));
     range.sendToBack();
     range.strokeColor = '#F0AD4E';
@@ -311,6 +399,13 @@ class CanvasScript {
     return robot;
   }
 
+  /**
+   * Before setup (once)!
+   * 
+   * Draw the initial canvas (axis, axisHitbox, iterationText, origin, generation separator)
+   * These objects created are stored, to be reused for the next generations 
+   * (which simply clone them, then translate them)
+   */
   initialDraw() {
     // draw axis, and store for further use (cloning)
     let axis = new Path();
@@ -354,7 +449,7 @@ class CanvasScript {
     iterationText.content = '000';
     this.iterationText = iterationText;
 
-    // draw separator, and store for further use (cloning)
+    // draw separator
     let separator = new Path();
     separator.strokeColor = "#777";
     separator.add(new Point(0, 100));
