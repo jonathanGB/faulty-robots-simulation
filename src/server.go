@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 )
@@ -10,7 +11,10 @@ func main() {
 	fs := http.FileServer(http.Dir("app"))
 	http.Handle("/", fs)
 
-	go openBrowser("http://localhost:8080/")
+	if len(os.Args) > 1 && os.Args[1] == "-o" {
+		go openBrowser("http://localhost:8080/")
+	}
+
 	http.ListenAndServe(":8080", nil)
 }
 

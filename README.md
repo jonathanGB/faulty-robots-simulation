@@ -2,6 +2,11 @@
 
 ## Research project to visualize behaviour of robots (possibly faulty) running the point-convergence algorithm
 
+### How to Open?
+*Requires Go > 1.5*
+
+In the command-line, go to `src`, then do `go run server.go`. An optional flag `-o` can be provided to automatically open the default browser once the server is launched.
+
 ### User Features
 * View
   * Zoom-in the view with `z`
