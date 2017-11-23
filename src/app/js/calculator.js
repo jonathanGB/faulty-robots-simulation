@@ -1,5 +1,6 @@
 "use strict";
 
+// receiving messages (this file is a WebWorker)
 onmessage = ({data}) => {
   if (data.type == "generate") {
     generate(data.iter, data.todo, data.state, data.range);
@@ -44,6 +45,14 @@ function generate(iter, todo, state, range) {
   return generate(iter + 1, todo - 1, newState, range);
 }
 
+/**
+ * Retuns the robots visible to the left and to the right of the comparedRobot
+ * First of `lefts` is leftmost - last of `rights` is rightmost
+ * 
+ * @param {Array{Object}} state current state of robots' positions
+ * @param {Integer} currIndex index of the comparedRobot 
+ * @param {Number} range vision v of all robots 
+ */
 function findRobotsVisible(state, currIndex, range) {
   const visibles = {
     lefts: [],
@@ -51,6 +60,7 @@ function findRobotsVisible(state, currIndex, range) {
   };
   const comparedRobot = state[currIndex];
 
+  // look to the left
   for (let i = 0; i < currIndex; ++i) {
     const visitedRobot = state[i];
     const dist = comparedRobot.x - visitedRobot.x;
@@ -60,6 +70,7 @@ function findRobotsVisible(state, currIndex, range) {
     }
   }
 
+  // look to the right
   for (let i = currIndex + 1; i < state.length; ++i) {
     const visitedRobot = state[i];
     const dist = visitedRobot.x - comparedRobot.x;
