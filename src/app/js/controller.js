@@ -11,17 +11,25 @@ class Controller {
     this.range = 100; // range of vision of robots "v"
     this.calculatorListener = new EventEmitter(); // alerts when computations are done (as calculations are done in another thread asynchronously)
 
+    this.lightbox = document.getElementById("lightbox");
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
     this.robotVision = document.getElementById("robotVisionContainer");
     this.generateButton = document.getElementById("generate");
+    this.commandContainer = document.getElementById("commandContainer");
     this.commandInput = document.querySelector("#commandContainer textarea");
+    this.goodCommandIcon = document.querySelector("#commandContainer .good-command");
+    this.badCommandIcon = document.querySelector("#commandContainer .bad-command");
+    this.commandInputResizeIcon = document.querySelector("#commandContainer .expand");
 
     // draw the initial canvas for setup
     canvasScript.initialDraw();
     
     // listen to user events (outside canvas), and dispatch them to `handleEvent`
-    document.addEventListener("keypress", this); 
+    document.addEventListener("keypress", this);
+    this.lightbox.addEventListener("click", this);
+    this.commandInputResizeIcon.addEventListener("click", this);
+    this.commandInput.addEventListener("input", this);
     this.robotLabel.addEventListener("click", this);
     this.currentRobot.querySelector("#remove").addEventListener("click", this);
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
@@ -35,10 +43,15 @@ class Controller {
         this.states[response.iter] = response.newState;
 
         // if we were waiting for this generation, alert them (otherwise will do nothing)
-        this.listener.dispatch(`${response.iter}-generated`, response.newState);
+        this.calculatorListener.dispatch(`${response.iter}-generated`, response.newState);
       }
     };
-  }
+
+    // we want input to be empty onload
+    if (this.commandInput.value.length > 0) {
+      this.commandInput.value = "";
+    }
+  }  
 
   /**
    * Handles user events (but not in the canvas)
@@ -76,7 +89,11 @@ class Controller {
           canvasScript.replaceBubbleRobot(null);
           this.hideBubble();
           this.changeGenerateStatus()
+        } else if (target.classList.contains("expand") || target.id == "lightbox") {
+          // expand/minimize commandInput
+          this.expandCommandInput();
         }
+
         break;
       };
       case "input": {
@@ -120,8 +137,77 @@ class Controller {
           this.robotVision.querySelectorAll("input").forEach(input => input.value = value);
           canvasScript.updateRange(range);
         }
+
+        if (target.parentNode.id == "commandContainer") {
+          this.parseCommandInput(value);
+        }
       }
     }
+  }
+
+  /**
+   * Handle input from the user in the command textarea
+   * If there's an error, we alert the user and do not display the robots
+   * Otherwise, show the robots in the canvas
+   * 
+   * @param {String} value commandInput
+   */
+  parseCommandInput(value) {
+    // inner helper to handle when we have a bad command
+    const badCommand = () => {
+      this.goodCommandIcon.classList.remove("show");
+      this.badCommandIcon.classList.add("show");
+      this.generateButton.disabled = true;
+      canvasScript.generateCommandRobots([]); // send empty array so no new robots are added
+    };
+    this.hideBubble();
+    
+    // command can't be empty
+    if (value.length == 0) {
+      return badCommand()
+    }
+
+    try {
+      const command = JSON.parse(value);
+
+      // command must be an array with at least 2 robots
+      if (!Array.isArray(command) || command.length < 2) {
+        return badCommand();
+      }
+      
+      // store all labels to make sure they're unique
+      let labels = new Set();
+      for (let {label, x, faulty} of command) {
+        // label: String .. must be unique
+        // x: Number between 0 and MAX_X - MIN_X
+        // faulty: Boolean
+        if (!label || typeof label != "string" || labels.has(label) || !x || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) || faulty == undefined || typeof faulty != "boolean") {
+          return badCommand();              
+        } else {
+          labels.add(label); // remember label
+        }
+      }
+
+      // command is good
+      this.goodCommandIcon.classList.add("show");
+      this.badCommandIcon.classList.remove("show");
+      this.generateButton.disabled = false;
+
+      // display the robots!
+      canvasScript.generateCommandRobots(command);
+    } catch(e) {
+      return badCommand();
+    }
+  }
+
+  /**
+   * Expand or minimize the textarea (from or to a lightbox)
+   */
+  expandCommandInput() {
+    this.commandContainer.classList.toggle("show");
+    this.commandInputResizeIcon.classList.toggle("glyphicon-resize-full");
+    this.commandInputResizeIcon.classList.toggle("glyphicon-resize-small");
+    this.lightbox.classList.toggle("show");  
   }
 
   /**
@@ -204,7 +290,7 @@ class Controller {
       }
 
       // current generation is not cached, wait until it has been computed
-      this.listener.on(`${this.iteration}-generated`, state => {
+      this.calculatorListener.on(`${this.iteration}-generated`, state => {
         resolve({i, nextGen: state});
         
         // we are at the end of the batch, generate a new one

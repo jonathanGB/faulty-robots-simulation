@@ -281,6 +281,29 @@ class CanvasScript {
   }
 
   /**
+   * New command inbound: we must delete previous robots in setup and display the new ones
+   * @param {Array{Object}} command robots to generate 
+   */
+  generateCommandRobots(command) {
+    // cleanup previous robots
+    this.robots.forEach(robot => {
+      // delete previous bubble data 
+      robot.data.label.remove();
+      robot.data.range.remove();
+      robot.remove();
+    });
+    this.robots.clear();
+    this.updateOrigin();
+
+    // insert the new robots in the canvas
+    command.forEach(({x, faulty, label}) => this.generateRobot({
+      x: x + this.MIN_X, // shift to respect absolute-x
+      faulty,
+      label,
+    }));
+  }
+
+  /**
    * Setup only!
    * Creates a new robot (or a replacement) and returns it
    * 

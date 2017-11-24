@@ -31,7 +31,10 @@
             v: <input id="robotVisionValue" type="number" min="1" max="575" value="100" step="1"><br>
             <input id="robotVisionSlider" type="range" min="1" max="575" value="100" step="1">
           </section><section id="commandContainer">
-            <textarea>Input a setup here...</textarea>
+            <i class="expand glyphicon glyphicon-resize-full"></i>
+            <i class="command bad-command glyphicon glyphicon-remove"></i>
+            <i class="command good-command glyphicon glyphicon-ok"></i>
+            <textarea placeholder="Input a setup here..."></textarea>
           </section>
         </div>
       </div>
@@ -40,6 +43,7 @@
         <canvas id="myCanvas" width="1200" height="600"></canvas>
       </div>
     </main>
+    <div id="lightbox"></div>
 
     <script src="js/vendor/paper-full.min.js"></script>
     <script src="js/canvasScript.js"></script>
