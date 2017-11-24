@@ -11,6 +11,8 @@ func main() {
 	fs := http.FileServer(http.Dir("app"))
 	http.Handle("/", fs)
 
+	// open browser automatically if "-o" is provided as a command-line argument
+	// it has to be the first argument for now!
 	if len(os.Args) > 1 && os.Args[1] == "-o" {
 		go openBrowser("http://localhost:8080/")
 	}
