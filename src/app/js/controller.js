@@ -11,6 +11,8 @@ class Controller {
     this.range = 100; // range of vision of robots "v"
     this.calculatorListener = new EventEmitter(); // alerts when computations are done (as calculations are done in another thread asynchronously)
 
+    this.saveButton = document.getElementById("save");
+    this.loadButton = document.getElementById("load");
     this.lightbox = document.getElementById("lightbox");
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
@@ -22,11 +24,15 @@ class Controller {
     this.badCommandIcon = document.querySelector("#commandContainer .bad-command");
     this.commandInputResizeIcon = document.querySelector("#commandContainer .expand");
 
+    $(this.saveButton).popover();            
+
     // draw the initial canvas for setup
     canvasScript.initialDraw();
     
     // listen to user events (outside canvas), and dispatch them to `handleEvent`
     document.addEventListener("keypress", this);
+    this.saveButton.addEventListener("click", this);
+    this.loadButton.addEventListener("click", this);
     this.lightbox.addEventListener("click", this);
     this.commandInputResizeIcon.addEventListener("click", this);
     this.commandInput.addEventListener("input", this);
@@ -92,6 +98,12 @@ class Controller {
         } else if (target.classList.contains("expand") || target.id == "lightbox") {
           // expand/minimize commandInput
           this.expandCommandInput();
+        } else if (target.id == "save") {
+          // save current command
+          this.askToSaveCommand();
+        } else if (target.id == "load") {
+          // load all commands stored
+          this.loadCommands();
         }
 
         break;
@@ -146,6 +158,73 @@ class Controller {
   }
 
   /**
+   * Simple helper to destroy the button popover
+   */
+  destroyPopover() {
+    $(this.saveButton).popover("destroy");
+    this.saveButton.removeAttribute("data-content")
+  }
+
+  /**
+   * Determines whether to show/hide the popover, and dynamically builds the popover if we show it
+   */
+  askToSaveCommand() {
+    // popover already there, hide it
+    if (this.saveButton.hasAttribute("data-content")) {
+      this.destroyPopover();
+      return;
+    }
+
+    // create dynamic popover
+    const now = new Date();
+    const defaultName = `setup-${localStorage.length} (${now.getDate().toString().padStart(2, "0")}-${now.getMonth().toString().padStart(2, "0")}-${now.getFullYear()})`;
+    const template = `<form onsubmit="controller.saveCommand(this.elements[0].value); return false;">
+                        <div class="form-group">
+                          <label for="commandName">Name:</label>
+                          <input id="commandName" class="form-control" type="text" value="${defaultName}">
+                        </div>
+                        <button class="btn btn-primary" type="submit">Save</button> 
+                      </form>
+                     `
+    $(this.saveButton).attr("data-content", template).popover("show")
+  }
+
+  /**
+   * Make sure the setupName is unique; if so, store the command in localStorage
+   * 
+   * @param {String} setupName name of the provided setup
+   */
+  saveCommand(setupName) {
+    // make sure the setup name is not already used
+    for (let i = 0; i < localStorage.length; i++) {
+      if (setupName == localStorage.key(i)) {
+        toastr.error("", "setup name already used!");
+        return;
+      }
+    }
+
+    // setup name is good; store the setup and remove the popover
+    localStorage.setItem(setupName, this.commandInput.value);
+    toastr.success("", "Setup saved!");
+    this.destroyPopover();
+  }
+
+  /**
+   * 
+   */
+  fetchCommands() {
+
+  }
+
+  /**
+   * Load a command
+   * @param {String} command stored command to load 
+   */
+  loadCommand(command) {
+
+  }
+
+  /**
    * Handle input from the user in the command textarea
    * If there's an error, we alert the user and do not display the robots
    * Otherwise, show the robots in the canvas
@@ -154,17 +233,19 @@ class Controller {
    */
   parseCommandInput(value) {
     // inner helper to handle when we have a bad command
-    const badCommand = () => {
+    const badCommand = (errMsg) => {
+      console.log(errMsg);
       this.goodCommandIcon.classList.remove("show");
       this.badCommandIcon.classList.add("show");
       this.generateButton.disabled = true;
+      this.saveButton.disabled = true;
       canvasScript.generateCommandRobots([]); // send empty array so no new robots are added
     };
     this.hideBubble();
     
     // command can't be empty
     if (value.length == 0) {
-      return badCommand()
+      return badCommand("len == 0")
     }
 
     try {
@@ -172,7 +253,7 @@ class Controller {
 
       // command must be an array with at least 2 robots
       if (!Array.isArray(command) || command.length < 2) {
-        return badCommand();
+        return badCommand("not an arr or not enough elems");
       }
       
       // store all labels to make sure they're unique
@@ -182,7 +263,7 @@ class Controller {
         // x: Number between 0 and MAX_X - MIN_X
         // faulty: Boolean
         if (!label || typeof label != "string" || labels.has(label) || !x || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) || faulty == undefined || typeof faulty != "boolean") {
-          return badCommand();              
+          return badCommand("bad robot format");              
         } else {
           labels.add(label); // remember label
         }
@@ -192,11 +273,12 @@ class Controller {
       this.goodCommandIcon.classList.add("show");
       this.badCommandIcon.classList.remove("show");
       this.generateButton.disabled = false;
+      this.saveButton.disabled = false;
 
       // display the robots!
       canvasScript.generateCommandRobots(command);
     } catch(e) {
-      return badCommand();
+      return badCommand("not json");
     }
   }
 
@@ -343,3 +425,20 @@ class Controller {
 }
 
 let controller = new Controller();
+toastr.options = {
+  "closeButton": false,
+  "debug": false,
+  "newestOnTop": false,
+  "progressBar": false,
+  "positionClass": "toast-top-right",
+  "preventDuplicates": false,
+  "onclick": null,
+  "showDuration": "300",
+  "hideDuration": "1000",
+  "timeOut": "3000",
+  "extendedTimeOut": "1000",
+  "showEasing": "swing",
+  "hideEasing": "linear",
+  "showMethod": "fadeIn",
+  "hideMethod": "fadeOut"
+}
