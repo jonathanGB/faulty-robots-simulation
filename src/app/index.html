@@ -18,7 +18,15 @@
       <div id="start">
         <div class="text-center">
           <button id="generate" class="btn btn-primary" disabled="true">Generate</button>
-          <button id="load" class="btn btn-info" disabled="true">Load setup <span class="caret"></span></button>
+          <div class="dropdown">
+            <button id="load" class="btn btn-info"type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Load setup
+              <span class="caret"></span>
+            </button>
+            <ul id="loadDropdown" class="dropdown-menu" aria-labelledby="dLabel">
+              <!-- dynamically populated -->
+            </ul>
+          </div>
           <button id="save" class="btn btn-success" disabled="true" data-html="true" data-title="Save command" data-placement="bottom">Save setup</button>
           <button class="btn btn-warning" onclick="location.reload()">Restart</button>
         </div>
@@ -51,7 +59,7 @@
     <script src="js/event.js"></script>
     <script src="js/vendor/jquery.min.js"></script>
     <script src="js/vendor/toastr.min.js"></script>
-    <script src="js/vendor/bootstrap-popover.min.js"></script>
+    <script src="js/vendor/bootstrap.min.js"></script>
     <script src="js/controller.js"></script>
   </body>
 </html>

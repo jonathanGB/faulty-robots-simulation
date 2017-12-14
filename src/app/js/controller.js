@@ -13,6 +13,7 @@ class Controller {
 
     this.saveButton = document.getElementById("save");
     this.loadButton = document.getElementById("load");
+    this.setupsDropdown = document.getElementById("loadDropdown")
     this.lightbox = document.getElementById("lightbox");
     this.currentRobot = document.getElementById("currentRobot");
     this.robotLabel = document.getElementById("robotLabel");
@@ -24,15 +25,18 @@ class Controller {
     this.badCommandIcon = document.querySelector("#commandContainer .bad-command");
     this.commandInputResizeIcon = document.querySelector("#commandContainer .expand");
 
+    // initialize the popover
     $(this.saveButton).popover();            
 
     // draw the initial canvas for setup
     canvasScript.initialDraw();
+
+    // populate setups dropdown
+    this.populateSetupsDropdown();
     
     // listen to user events (outside canvas), and dispatch them to `handleEvent`
     document.addEventListener("keypress", this);
     this.saveButton.addEventListener("click", this);
-    this.loadButton.addEventListener("click", this);
     this.lightbox.addEventListener("click", this);
     this.commandInputResizeIcon.addEventListener("click", this);
     this.commandInput.addEventListener("input", this);
@@ -101,9 +105,6 @@ class Controller {
         } else if (target.id == "save") {
           // save current command
           this.askToSaveCommand();
-        } else if (target.id == "load") {
-          // load all commands stored
-          this.loadCommands();
         }
 
         break;
@@ -158,6 +159,33 @@ class Controller {
   }
 
   /**
+   * Create a new list element in the dropdown of setups saved and append it to the list
+   * 
+   * @param {String} setupName 
+   */
+  createSetupDropdownElement(setupName) {
+    let li = document.createElement("li");
+    let a = document.createElement("a");
+
+    a.innerText = setupName;
+    a.href = "javascript:void(0)"; // no action
+    a.onclick = this.loadCommand.bind(this);
+    li.appendChild(a);
+
+    this.setupsDropdown.appendChild(li);
+  }
+
+  /**
+   * Go through the saved setups and display them in the setups dropdown
+   */
+  populateSetupsDropdown() {
+    for (let i = 0; i < localStorage.length; i++) {
+      const setupName = localStorage.key(i);
+      this.createSetupDropdownElement(setupName);
+    }
+  }
+
+  /**
    * Simple helper to destroy the button popover
    */
   destroyPopover() {
@@ -207,21 +235,24 @@ class Controller {
     localStorage.setItem(setupName, this.commandInput.value);
     toastr.success("", "Setup saved!");
     this.destroyPopover();
+    this.createSetupDropdownElement(setupName);
   }
 
   /**
+   * Load a command from the dropdown
    * 
-   */
-  fetchCommands() {
-
-  }
-
-  /**
-   * Load a command
    * @param {String} command stored command to load 
    */
-  loadCommand(command) {
+  loadCommand({target: {innerText: setupName}}) {
+    const setup = localStorage.getItem(setupName);
+    if (!setup) {
+      toastr.error("", "setup not found!");
+      return;
+    }
 
+    toastr.success("", "Setup loaded!");
+    this.commandInput.value = setup;
+    this.parseCommandInput(setup);
   }
 
   /**
