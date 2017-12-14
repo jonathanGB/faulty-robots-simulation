@@ -260,7 +260,7 @@ class CanvasScript {
       new Point(globalX - controller.range, 50),
       new Point(globalX + controller.range, 50),
     ]);
-
+    controller.updateCommandInput();
   }
 
   /**
@@ -452,6 +452,7 @@ class CanvasScript {
 
         this.generateRobot(newRobotData);
         controller.changeGenerateStatus();
+        controller.updateCommandInput();
       },
       mousemove: () => {
         this.canvas.style.cursor = "pointer";

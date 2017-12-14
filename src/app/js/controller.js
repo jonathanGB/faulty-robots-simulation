@@ -92,13 +92,15 @@ class Controller {
         if (target == this.robotLabel) {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
+          this.updateCommandInput();
         } else if (target == this.generateButton) {
           this.startGenerate();
         } else if (target.classList.contains("label-danger")) {
           // delete robot
           canvasScript.replaceBubbleRobot(null);
           this.hideBubble();
-          this.changeGenerateStatus()
+          this.changeGenerateStatus();
+          this.updateCommandInput();
         } else if (target.classList.contains("expand") || target.id == "lightbox") {
           // expand/minimize commandInput
           this.expandCommandInput();
@@ -149,6 +151,7 @@ class Controller {
           this.range = range;
           this.robotVision.querySelectorAll("input").forEach(input => input.value = value);
           canvasScript.updateRange(range);
+          this.updateCommandInput();
         }
 
         if (target.parentNode.id == "commandContainer") {
@@ -156,6 +159,17 @@ class Controller {
         }
       }
     }
+  }
+
+  updateCommandInput() {
+    const v = this.range;
+    const robots = [...canvasScript.robots].map(([label, {position: {x}, data: {faulty}}]) => ({
+      label,
+      faulty,
+      x: x - canvasScript.MIN_X,
+    }));
+    const command = {v, robots};
+    this.commandInput.value = JSON.stringify(command, null, '\t');
   }
 
   /**
@@ -305,7 +319,7 @@ class Controller {
         // label: String .. must be unique
         // x: Number between 0 and MAX_X - MIN_X
         // faulty: Boolean
-        if (!label || typeof label != "string" || labels.has(label) || !x || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) || faulty == undefined || typeof faulty != "boolean") {
+        if (!label || typeof label != "string" || labels.has(label) || x == undefined || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) || faulty == undefined || typeof faulty != "boolean") {
           return badCommand("bad robot format");              
         } else {
           labels.add(label); // remember label
