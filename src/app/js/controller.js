@@ -250,9 +250,13 @@ class Controller {
       return;
     }
 
-    toastr.success("", "Setup loaded!");
     this.commandInput.value = setup;
-    this.parseCommandInput(setup);
+    const parseError = this.parseCommandInput(setup);
+    if (parseError) {
+      toastr.error("", "Setup loaded, but bad format!")
+    } else {
+      toastr.success("", "Setup loaded!");
+    }
   }
 
   /**
@@ -261,6 +265,7 @@ class Controller {
    * Otherwise, show the robots in the canvas
    * 
    * @param {String} value commandInput
+   * @returns true if there was an error, nothing otherwise
    */
   parseCommandInput(value) {
     // inner helper to handle when we have a bad command
@@ -271,6 +276,7 @@ class Controller {
       this.generateButton.disabled = true;
       this.saveButton.disabled = true;
       canvasScript.generateCommandRobots([]); // send empty array so no new robots are added
+      return true; 
     };
     this.hideBubble();
     
@@ -280,7 +286,13 @@ class Controller {
     }
 
     try {
-      const command = JSON.parse(value);
+      // v (vision) and command (list of robots)
+      const {v, robots: command} = JSON.parse(value);
+
+      // command must have a property v (vision)
+      if (!v || !Number.isInteger(v) || v < 1 || v > 575) {
+        return badCommand("parameter v is absent or is not an integer between 1 and 575");
+      }
 
       // command must be an array with at least 2 robots
       if (!Array.isArray(command) || command.length < 2) {
@@ -306,7 +318,9 @@ class Controller {
       this.generateButton.disabled = false;
       this.saveButton.disabled = false;
 
-      // display the robots!
+      // update vision range & display the robots!
+      this.range = v;
+      this.robotVision.querySelectorAll("input").forEach(input => input.value = v);      
       canvasScript.generateCommandRobots(command);
     } catch(e) {
       return badCommand("not json");

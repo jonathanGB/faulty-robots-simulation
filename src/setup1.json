@@ -1,11 +1,14 @@
-[
-  {
-    "x": 1000,
-    "faulty": false,
-    "label": "02"
-  }, {
-    "faulty": true,
-    "label": "01",
-    "x": 83
-  }
-]
+{
+  "v": 100,
+  "robots": [
+    {
+      "x": 1000,
+      "faulty": false,
+      "label": "02"
+    }, {
+      "faulty": true,
+      "label": "01",
+      "x": 83
+    }
+  ]
+}
