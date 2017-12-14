@@ -439,7 +439,6 @@ class CanvasScript {
     axis.add(new Point(1200, 50));
     this.axis = axis;
 
-    let robotNumber = 1;
     let axisHitBox = new Path.Rectangle(new Rectangle(50, 40, 1150, 30));
     axisHitBox.fillColor = "white";
     axisHitBox.opacity = 0;
@@ -447,13 +446,12 @@ class CanvasScript {
       click: ({event: {shiftKey: faulty}, point: {x}}) => {
         let newRobotData = {
           faulty,
-          label: robotNumber.toString().padStart(2, "0"),
+          label: this.generateRobotLabel(),
           x,
         };
 
         this.generateRobot(newRobotData);
         controller.changeGenerateStatus();
-        robotNumber++;
       },
       mousemove: () => {
         this.canvas.style.cursor = "pointer";
@@ -486,6 +484,21 @@ class CanvasScript {
     origin.add(new Point(this.MIN_X, 20));
     origin.add(new Point(this.MIN_X, 80));
     this.origin = origin;
+  }
+
+  /**
+   * Generate a new unique robot label, and returns it
+   */
+  generateRobotLabel() {
+    let robotNumber = 1;
+    let robotLabel = robotNumber.toString().padStart(2, "0");
+
+    while (this.robots.has(robotLabel)) {
+      robotNumber++;
+      robotLabel = robotNumber.toString().padStart(2, "0");
+    }
+
+    return robotLabel;
   }
 }
 
