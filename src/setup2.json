@@ -1,0 +1,45 @@
+{
+	"v": 100,
+	"robots": [
+		{
+			"label": "01",
+			"faulty": true,
+			"x": 200
+		},
+		{
+			"label": "02",
+			"faulty": false,
+			"x": 300
+		},
+		{
+			"label": "03",
+			"faulty": false,
+			"x": 400
+		},
+		{
+			"label": "04",
+			"faulty": false,
+			"x": 450
+		},
+		{
+			"label": "05",
+			"faulty": false,
+			"x": 500
+		},
+		{
+			"label": "06",
+			"faulty": false,
+			"x": 520
+		},
+		{
+			"label": "07",
+			"faulty": false,
+			"x": 540
+		},
+		{
+			"label": "08",
+			"faulty": true,
+			"x": 560
+		}
+	]
+}

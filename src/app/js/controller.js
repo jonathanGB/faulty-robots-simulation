@@ -464,11 +464,12 @@ class Controller {
    * 
    * @param {Object} param0 properties of the robot we want to display
    */
-  showBubble({faulty, label: {content}, localPosition: {x}}) {
+  showBubble({colour, faulty, label: {content}, localPosition: {x}}) {
     this.robotLabel.innerText = content;
     if (faulty) {
       this.robotLabel.classList.add("faulty");
     }
+    this.robotLabel.style.backgroundColor = colour;
     this.currentRobot.querySelector("#robotX").value = x;
     this.currentRobot.classList.remove("invisible");
   }

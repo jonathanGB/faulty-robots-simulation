@@ -156,14 +156,12 @@ main {
 #robotLabel {
   color: white;
   border: 1px solid black;
-  background-color: #008000;
   border-radius: 50%;
   padding: 5px;
 }
 
 #robotLabel.faulty {
   border-radius: 0;
-  background-color: #FF0000;
 }
 
 .flex {

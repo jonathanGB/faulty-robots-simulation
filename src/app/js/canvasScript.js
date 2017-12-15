@@ -97,7 +97,7 @@ class CanvasScript {
     this.recenterView(separator.position.y);
 
     // display all robots of the new generation
-    for (const {label, faulty, x} of newGen) {
+    for (const {label, faulty, x, colour} of newGen) {
       // get canvas-related info and clone objects
       const initialRobot = this.robots.get(label);
       const robot = initialRobot.clone();
@@ -108,6 +108,8 @@ class CanvasScript {
       const deltaX = absoluteX - robot.position.x; // delta in x of the new robot to its x-position in the previous generation (to translate)
       
       // assign data to the new robot
+      robot.fillColor = colour;
+      robot.data.colour = colour;      
       robot.data.label = robotLabel;
       robot.data.range = robotRange;
       robot.data.localPosition = robotLocalPosition;
@@ -319,9 +321,9 @@ class CanvasScript {
     let robot = faulty ? // faulty robot are squares; non-faulty are circles
       new Path.RegularPolygon(center, 4, radius + 5) :
       new Path.Circle(center, radius);
-    robot.fillColor = faulty ?
-      "red" :
-      "green";
+    let colour = faulty ? "red" : "green";
+    robot.fillColor = colour;
+    robot.data.colour = colour;
     robot.data.faulty = faulty;
     robot.data.localPosition = {
       x: x - this.origin.position.x,
