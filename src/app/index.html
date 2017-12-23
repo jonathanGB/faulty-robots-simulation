@@ -36,6 +36,12 @@
               <span id="robotLabel"></span> <span id="remove" class="label label-danger">Remove</span>
             </h4>
             x: <input id="robotX" type="text"></span>
+          </section><section id="nextPositionContainer">
+            <label for="nextPosition">Next position calculated: </label>
+            <select id="nextPosition">
+              <option value="most" selected>just left/right most robots</option>
+              <option value="all">all visible robots</option>
+            </select>
           </section><section id="robotVisionContainer">
             v: <input id="robotVisionValue" type="number" min="1" max="575" value="100" step="1"><br>
             <input id="robotVisionSlider" type="range" min="1" max="575" value="100" step="1">

@@ -1,9 +1,17 @@
 "use strict";
 
+const ALL_VISIBLE = 0;
+const LEFT_RIGHT_MOST_VISIBLE = 1;
+
+let nextPositionCalculation = LEFT_RIGHT_MOST_VISIBLE;
+
 // receiving messages (this file is a WebWorker)
 onmessage = ({data}) => {
   if (data.type == "generate") {
     generate(data.iter, data.todo, data.state, data.range);
+  } else if (data.type == "update-nextPosition") {
+    // update how we calculate next position
+    nextPositionCalculation = data.value == "all" ? ALL_VISIBLE : LEFT_RIGHT_MOST_VISIBLE;
   }
 }
 
@@ -23,14 +31,22 @@ function generate(iter, todo, state, range) {
   for (let i = 0; i < state.length; ++i) {
     let currRobot = state[i];
     const {lefts, rights} = findRobotsVisible(state, i, range);
-    const leftMost = lefts.length ? lefts[0] : currRobot; // if no robots on the left, left-most is itself
-    const rightMost = rights.length ? rights[rights.length - 1] : currRobot; // if no robots on the right, right-most is itself
 
-    // if not faulty: update position; if faulty: keep the same
+    // defines the robots visible that we consider for the next position calculation
+    // either we care only about left/right-most visible OR
+    // we care about all the robots visible (including the current robot itself)
+    let visiblesToConsider = nextPositionCalculation == LEFT_RIGHT_MOST_VISIBLE ?
+      [
+        lefts.length ? lefts[0] : currRobot, // if no robots on the left, left-most is itself
+        rights.length ? rights[rights.length - 1] : currRobot, // if no robots on the right, right-most is itself
+      ] :
+      [...lefts, currRobot, ...rights];
+
+    // if not faulty: update position to average position; if faulty: keep the same
     // we store the new position in either cases in a temporary property (newX) to not interfere with other robots calculations
     currRobot.newX = currRobot.faulty ?
       currRobot.x :
-      (leftMost.x + rightMost.x) / 2;
+      getAveragePosition(visiblesToConsider);
 
     newState.push(currRobot);
   }
@@ -158,4 +174,13 @@ function* generateColour() {
   yield "orange";  
   yield "silver";
   yield "black"; 
+}
+
+/**
+ * Returns the average x of all the objects in the array
+ * 
+ * @param {Array{Object}} arr Array of robots
+ */
+function getAveragePosition(arr) {
+  return arr.reduce((sum, {x}) => sum + x, 0) / arr.length;
 }

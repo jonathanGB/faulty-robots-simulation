@@ -24,6 +24,7 @@ class Controller {
     this.goodCommandIcon = document.querySelector("#commandContainer .good-command");
     this.badCommandIcon = document.querySelector("#commandContainer .bad-command");
     this.commandInputResizeIcon = document.querySelector("#commandContainer .expand");
+    this.nextPosition = document.getElementById("nextPosition");
 
     // initialize the popover
     $(this.saveButton).popover();            
@@ -33,6 +34,9 @@ class Controller {
 
     // populate setups dropdown
     this.populateSetupsDropdown();
+
+    // make sure the default set is "2 most visible" for next position calculation
+    this.nextPosition.value = "most";
     
     // listen to user events (outside canvas), and dispatch them to `handleEvent`
     document.addEventListener("keypress", this);
@@ -45,6 +49,7 @@ class Controller {
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
     this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
     this.generateButton.addEventListener("click", this);
+    this.nextPosition.addEventListener("change", this);
 
     // initialize the calculator worker (thread) & listen to its incoming messages
     this.worker = new Worker("js/calculator.js");
@@ -158,17 +163,28 @@ class Controller {
           this.parseCommandInput(value);
         }
       }
+      case "change": {
+        // "nextPosition" select changed, update webworker flag & update command input 
+        if (target == this.nextPosition) {
+          this.worker.postMessage({
+            type: "update-nextPosition",
+            value: target.value,
+          });
+          this.updateCommandInput();
+        }
+      }
     }
   }
 
   updateCommandInput() {
     const v = this.range;
+    const nextPosition = this.nextPosition.value;
     const robots = [...canvasScript.robots].map(([label, {position: {x}, data: {faulty}}]) => ({
       label,
       faulty,
       x: x - canvasScript.MIN_X,
     }));
-    const command = {v, robots};
+    const command = {v, nextPosition, robots};
     this.commandInput.value = JSON.stringify(command, null, '\t');
   }
 
@@ -301,11 +317,16 @@ class Controller {
 
     try {
       // v (vision) and command (list of robots)
-      const {v, robots: command} = JSON.parse(value);
+      const {v, robots: command, nextPosition = this.nextPosition.value} = JSON.parse(value);
 
       // command must have a property v (vision)
       if (!v || !Number.isInteger(v) || v < 1 || v > 575) {
         return badCommand("parameter v is absent or is not an integer between 1 and 575");
+      }
+
+      // nextPosition must be either "all" or "most"
+      if (nextPosition != "all" && nextPosition != "most") {
+        return badCommand("parameter nextPosition, if given, must be either 'all' or 'most'");
       }
 
       // command must be an array with at least 2 robots
@@ -331,6 +352,15 @@ class Controller {
       this.badCommandIcon.classList.remove("show");
       this.generateButton.disabled = false;
       this.saveButton.disabled = false;
+
+      // update nextPosition calculation
+      if (this.nextPosition.value != nextPosition) {
+        this.worker.postMessage({
+          type: "update-nextPosition",
+          value: nextPosition,
+        });
+        this.nextPosition.value = nextPosition;
+      }
 
       // update vision range & display the robots!
       this.range = v;
@@ -373,6 +403,8 @@ class Controller {
       input.removeEventListener("input", this);
       input.type == "range" ? input.disabled = true : input.readOnly = true;
     });
+    this.nextPosition.removeEventListener("change", this);
+    this.nextPosition.disabled = true;
     this.generateButton.removeEventListener("click", this);
     this.generateButton.disabled = true;
     this.commandInput.readOnly = true;
