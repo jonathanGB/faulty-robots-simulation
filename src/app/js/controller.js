@@ -30,13 +30,13 @@ class Controller {
     $(this.saveButton).popover();            
 
     // draw the initial canvas for setup
-    canvasScript.initialDraw();
+    canvasScript.dimension == "1d" ?
+      canvasScript.initialDraw1d():
+      canvasScript.initialDraw2d();
 
+    // TODO: populate only 1d or 2d? would need to store in localStorage a hint to know which type a command is
     // populate setups dropdown
     this.populateSetupsDropdown();
-
-    // make sure the default set is "2 most visible" for next position calculation
-    this.nextPosition.value = "most";
     
     // listen to user events (outside canvas), and dispatch them to `handleEvent`
     document.addEventListener("keypress", this);
@@ -49,10 +49,18 @@ class Controller {
     this.currentRobot.querySelector("#robotX").addEventListener("input", this);
     this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
     this.generateButton.addEventListener("click", this);
-    this.nextPosition.addEventListener("change", this);
+
+    if (canvasScript.dimension == "1d") {
+      // make sure the default set is "2 most visible" for next position calculation
+      this.nextPosition.value = "most";
+      this.nextPosition.addEventListener("change", this);
+    } else {
+      this.currentRobot.querySelector("#robotY").addEventListener("input", this);
+    }
+
 
     // initialize the calculator worker (thread) & listen to its incoming messages
-    this.worker = new Worker("js/calculator.js");
+    this.worker = new Worker(`js/calculator${canvasScript.dimension}.js`);
     this.worker.onmessage = ({data: {type, response}}) => {
       if (type == "generate") {
         this.states[response.iter] = response.newState;
@@ -63,9 +71,7 @@ class Controller {
     };
 
     // we want input to be empty onload
-    if (this.commandInput.value.length > 0) {
-      this.commandInput.value = "";
-    }
+    this.commandInput.value = "";
   }  
 
   /**
@@ -97,6 +103,7 @@ class Controller {
         if (target == this.robotLabel) {
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
+          this.robotLabel.style.backgroundColor = this.robotLabel.classList.contains("faulty") ? "red" : "green";
           this.updateCommandInput();
         } else if (target == this.generateButton) {
           this.startGenerate();
@@ -120,8 +127,8 @@ class Controller {
         let {value} = target;
 
         // user is writing in the x-coordinate textual input
-        if (target.id == "robotX") {
-          const localX = Number(value);
+        if (target.id == "robotX" || target.id == "robotY") {
+          const localX = Number(this.currentRobot.querySelector("#robotX").value);
           const globalX = localX + canvasScript.origin.position.x;
 
           // bad input, alert by turning input red
@@ -130,12 +137,25 @@ class Controller {
             return;
           }
 
+          let localY, globalY;
+          if (canvasScript.dimension == "2d") {
+            localY = Number(this.currentRobot.querySelector("#robotY").value);
+            globalY = canvasScript.origin.position.y - localY;
+
+            if (isNaN(localY) || globalY < canvasScript.MAX_Y || globalY > canvasScript.MIN_Y) {
+              target.style.backgroundColor = "red";
+              return;
+            }
+          }
+
           // good input, update robot position
           target.style.backgroundColor = "";
           canvasScript.updateRobotPosition({
             robot: canvasScript.hasBubble,
             localX,
             globalX,
+            localY,
+            globalY,
           });
 
           return;
@@ -178,11 +198,13 @@ class Controller {
 
   updateCommandInput() {
     const v = this.range;
-    const nextPosition = this.nextPosition.value;
-    const robots = [...canvasScript.robots].map(([label, {position: {x}, data: {faulty}}]) => ({
+    const is2d = canvasScript.dimension == "2d";
+    const nextPosition = this.nextPosition ? this.nextPosition.value : undefined;
+    const robots = [...canvasScript.robots].map(([label, {position: {x}, data: {faulty, localPosition: {y}}}]) => ({
       label,
       faulty,
       x: x - canvasScript.MIN_X,
+      y: is2d ? y : undefined,
     }));
     const command = {v, nextPosition, robots};
     this.commandInput.value = JSON.stringify(command, null, '\t');
@@ -446,30 +468,30 @@ class Controller {
    * Try to fetch the next generation; if not cached, wait till we receive an alert from `calculatorListener`
    */
   fetchNextGeneration() {
+    // helper to resolve the promise and start a new batch of generations to compute if need be
+    const resolveGeneration = (resolve, i, currState) => {
+      resolve({i, nextGen: currState});
+
+      // we are at the end of the batch, generate a new one
+      if (i % 10 == 0) {
+        this.generate(i + 1, 10, this.states[i]);
+      }
+    };
+
     return new Promise(resolve => {
       let currState = this.states[++this.iteration];
       const i = this.iteration;
 
       // if result already cached, return it
       if (currState) {
-        resolve({i, nextGen: currState});
-
-        // we are at the end of the batch, generate a new one
-        if (i % 10 == 0) {
-          this.generate(i + 1, 10, this.states[i]);
-        }
+        resolveGeneration(resolve, i, currState);
 
         return;
       }
 
       // current generation is not cached, wait until it has been computed
       this.calculatorListener.on(`${this.iteration}-generated`, state => {
-        resolve({i, nextGen: state});
-        
-        // we are at the end of the batch, generate a new one
-        if (i % 10 == 0) {
-          this.generate(i + 1, 10, this.states[i]);
-        }
+        resolveGeneration(resolve, i, state);
       }, true);
     });
   }
@@ -496,7 +518,7 @@ class Controller {
    * 
    * @param {Object} param0 properties of the robot we want to display
    */
-  showBubble({colour, faulty, label: {content}, localPosition: {x}}) {
+  showBubble({colour, faulty, label: {content}, localPosition: {x, y}}) {
     this.robotLabel.innerText = content;
     if (faulty) {
       this.robotLabel.classList.add("faulty");
@@ -504,6 +526,10 @@ class Controller {
     this.robotLabel.style.backgroundColor = colour;
     this.currentRobot.querySelector("#robotX").value = x;
     this.currentRobot.classList.remove("invisible");
+    
+    if (canvasScript.dimension == "2d") {
+      this.currentRobot.querySelector("#robotY").value = y;
+    }
   }
 
   /**
@@ -511,8 +537,11 @@ class Controller {
    * @param {Object} param0:
    *  x is the new x-position of the robot
    */
-  updateBubble({x}) {
+  updateBubble({x, y}) {
     this.currentRobot.querySelector("#robotX").value = x;
+    if (canvasScript.dimension == "2d") {
+      this.currentRobot.querySelector("#robotY").value = y;
+    }
   }
 }
 

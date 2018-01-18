@@ -167,3 +167,7 @@ main {
 .flex {
   display: flex;
 }
+
+#robotY {
+  margin-bottom: 5px;
+}
