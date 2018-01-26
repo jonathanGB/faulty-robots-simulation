@@ -24,7 +24,7 @@ class Controller {
     this.goodCommandIcon = document.querySelector("#commandContainer .good-command");
     this.badCommandIcon = document.querySelector("#commandContainer .bad-command");
     this.commandInputResizeIcon = document.querySelector("#commandContainer .expand");
-    this.nextPosition = document.getElementById("nextPosition");
+    this.nextPosition = document.getElementById("nextPosition") || {};
 
     // initialize the popover
     $(this.saveButton).popover();            
@@ -69,9 +69,6 @@ class Controller {
         this.calculatorListener.dispatch(`${response.iter}-generated`, response.newState);
       }
     };
-
-    // we want input to be empty onload
-    this.commandInput.value = "";
   }  
 
   /**
@@ -208,6 +205,17 @@ class Controller {
     }));
     const command = {v, nextPosition, robots};
     this.commandInput.value = JSON.stringify(command, null, '\t');
+
+    if (robots.length < 2) {
+      this.goodCommandIcon.classList.remove("show");
+      this.badCommandIcon.classList.add("show");
+      this.saveButton.disabled = true;
+    } else {
+      this.goodCommandIcon.classList.add("show");
+      this.badCommandIcon.classList.remove("show");
+      this.saveButton.disabled = false;
+    }
+
   }
 
   /**
@@ -233,7 +241,10 @@ class Controller {
   populateSetupsDropdown() {
     for (let i = 0; i < localStorage.length; i++) {
       const setupName = localStorage.key(i);
-      this.createSetupDropdownElement(setupName);
+      const dim = localStorage.getItem(setupName).startsWith("2d") ? "2d" : "1d";
+      if (dim == canvasScript.dimension) {
+        this.createSetupDropdownElement(setupName);
+      }
     }
   }
 
@@ -257,7 +268,7 @@ class Controller {
 
     // create dynamic popover
     const now = new Date();
-    const defaultName = `setup-${localStorage.length} (${now.getDate().toString().padStart(2, "0")}-${now.getMonth().toString().padStart(2, "0")}-${now.getFullYear()})`;
+    const defaultName = `setup-${localStorage.length} (${now.getDate().toString().padStart(2, "0")}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getFullYear()})`;
     const template = `<form onsubmit="controller.saveCommand(this.elements[0].value); return false;">
                         <div class="form-group">
                           <label for="commandName">Name:</label>
@@ -284,7 +295,7 @@ class Controller {
     }
 
     // setup name is good; store the setup and remove the popover
-    localStorage.setItem(setupName, this.commandInput.value);
+    localStorage.setItem(setupName, `${canvasScript.dimension}-${this.commandInput.value}`);
     toastr.success("", "Setup saved!");
     this.destroyPopover();
     this.createSetupDropdownElement(setupName);
@@ -296,11 +307,15 @@ class Controller {
    * @param {String} command stored command to load 
    */
   loadCommand({target: {innerText: setupName}}) {
-    const setup = localStorage.getItem(setupName);
-    if (!setup) {
+    const command = localStorage.getItem(setupName);
+    if (!command) {
       toastr.error("", "setup not found!");
       return;
     }
+
+    const setup = command.startsWith("1d") || command.startsWith("2d") ?
+      command.slice(3) :
+      command;
 
     this.commandInput.value = setup;
     const parseError = this.parseCommandInput(setup);
@@ -347,7 +362,7 @@ class Controller {
       }
 
       // nextPosition must be either "all" or "most"
-      if (nextPosition != "all" && nextPosition != "most") {
+      if (canvasScript.dimension == "1d" && nextPosition != "all" && nextPosition != "most") {
         return badCommand("parameter nextPosition, if given, must be either 'all' or 'most'");
       }
 
@@ -358,11 +373,15 @@ class Controller {
       
       // store all labels to make sure they're unique
       let labels = new Set();
-      for (let {label, x, faulty} of command) {
+      for (let {label, x, y, faulty} of command) {
         // label: String .. must be unique
         // x: Number between 0 and MAX_X - MIN_X
+        // y: if 2D... Number between 0 and MIN_Y - MAX_Y
         // faulty: Boolean
-        if (!label || typeof label != "string" || labels.has(label) || x == undefined || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) || faulty == undefined || typeof faulty != "boolean") {
+        if (!label || typeof label != "string" || labels.has(label) ||
+            x == undefined || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) ||
+            (canvasScript.dimension == "2d" && (y == undefined || typeof y != "number" || y < 0 || y > (canvasScript.MIN_Y - canvasScript.MAX_Y))) ||
+            faulty == undefined || typeof faulty != "boolean") {
           return badCommand("bad robot format");              
         } else {
           labels.add(label); // remember label

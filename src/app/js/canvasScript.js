@@ -327,8 +327,9 @@ class CanvasScript {
     this.updateOrigin();
 
     // insert the new robots in the canvas
-    command.forEach(({x, faulty, label}) => this.generateRobot({
+    command.forEach(({x, y, faulty, label}) => this.generateRobot({
       x: x + this.MIN_X, // shift to respect absolute-x
+      y: this.dimension == "2d" ? this.MIN_Y - y : undefined, // shift to respect absolute-y
       faulty,
       label,
     }));
