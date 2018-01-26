@@ -238,13 +238,14 @@ class CanvasScript {
       const {x} = robot.position;
 
       if (this.is1d()) {
+        // remove the previous vision "rectangle" and update with new width
         robot.data.range.removeSegments();
         robot.data.range.addSegments([
           new Point(x - range, 50),
           new Point(x + range, 50),
         ]);
       } else {
-        robot.data.range.scale(range / (robot.data.range.bounds.width / 2));
+        robot.data.range.scale(range / (robot.data.range.bounds.width / 2)); // updates the vision disk's radius
       }
     }
   }
@@ -277,6 +278,8 @@ class CanvasScript {
    *  robot is the robot object that we want to update
    *  localX is the local-x of the robot
    *  globalX is the absolute-x of the robot
+   *  localY is the local-y of the robot
+   *  globalY is the absolute-y of the robot
    */
   updateRobotPosition({robot, localX, globalX, localY, globalY}) {
     if (!isNaN(localX)) {
@@ -293,7 +296,7 @@ class CanvasScript {
       } 
     }
 
-    if (!isNaN(localY)) {
+    if (this.is2d()) {
       robot.data.localPosition.y = localY;
       robot.position.y = globalY;
       robot.data.label.position.y = globalY;
@@ -321,7 +324,6 @@ class CanvasScript {
     };
 
     let newRobot = this.generateRobot(newRobotData, true);
-    console.log(newRobot.data.range.opacity)
     this.replaceBubbleRobot(newRobot);
   }
 
@@ -356,7 +358,8 @@ class CanvasScript {
    * @param {Object} param0:
    *  faulty is if the robot to create is faulty
    *  label is the label of the robot to create
-   *  x is the x-coordinate of the robot to create
+   *  x is the absolute-x of the robot to create
+   *  y is the absolute-y of the robot to create
    * @param {Bool} isReplacement behaviour of generate varies slightly if it's a new robot or one we replace
    */
   generateRobot({faulty, label, x, y}, isReplacement=false) {
@@ -371,7 +374,7 @@ class CanvasScript {
     robot.data.faulty = faulty;
     robot.data.localPosition = {
       x: x - this.origin.position.x,
-      y: isNaN(y) ? undefined : this.origin.position.y - y,
+      y: this.is2d() ? this.origin.position.y - y : undefined, // set local-y if y exists 
     };
     robot.strokeColor = "black";
     
@@ -475,7 +478,7 @@ class CanvasScript {
       range.fillColor = '#F0AD4E';
     }
     range.sendToBack();
-    range.opacity = isReplacement ? 1 : 0;
+    range.opacity = isReplacement ? 1 : 0; // replacement's range will be shown (opacity 1) automatically, otherwise range is hidden by default
     robot.data.range = range;
 
     return robot;
@@ -570,7 +573,7 @@ class CanvasScript {
     axis.add(new Point(1100, 550));
     this.axis = axis;
 
-    let axisHitBox = new Path.Rectangle(new Rectangle(100, 50, 1000, 500));
+    let axisHitBox = new Path.Rectangle(new Rectangle(100, 50, 1000, 500)); // whole quadrant is a hitbox
     axisHitBox.fillColor = "white";
     axisHitBox.opacity = 0;
     axisHitBox.on({

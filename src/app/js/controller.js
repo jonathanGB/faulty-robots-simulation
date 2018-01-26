@@ -24,7 +24,7 @@ class Controller {
     this.goodCommandIcon = document.querySelector("#commandContainer .good-command");
     this.badCommandIcon = document.querySelector("#commandContainer .bad-command");
     this.commandInputResizeIcon = document.querySelector("#commandContainer .expand");
-    this.nextPosition = document.getElementById("nextPosition") || {};
+    this.nextPosition = document.getElementById("nextPosition") || {}; // empty object to bypass problems in 2D
 
     // initialize the popover
     $(this.saveButton).popover();            
@@ -34,8 +34,7 @@ class Controller {
       canvasScript.initialDraw1d():
       canvasScript.initialDraw2d();
 
-    // TODO: populate only 1d or 2d? would need to store in localStorage a hint to know which type a command is
-    // populate setups dropdown
+    // populate setups dropdown (1d setups if in 1d, 2d setups if in 2d)
     this.populateSetupsDropdown();
     
     // listen to user events (outside canvas), and dispatch them to `handleEvent`
@@ -54,7 +53,7 @@ class Controller {
       // make sure the default set is "2 most visible" for next position calculation
       this.nextPosition.value = "most";
       this.nextPosition.addEventListener("change", this);
-    } else {
+    } else { // is2d
       this.currentRobot.querySelector("#robotY").addEventListener("input", this);
     }
 
@@ -98,6 +97,7 @@ class Controller {
       }
       case "click": {
         if (target == this.robotLabel) {
+          // toggle faulty state
           canvasScript.toggleFaulty();
           this.robotLabel.classList.toggle("faulty");
           this.robotLabel.style.backgroundColor = this.robotLabel.classList.contains("faulty") ? "red" : "green";
@@ -123,17 +123,18 @@ class Controller {
       case "input": {
         let {value} = target;
 
-        // user is writing in the x-coordinate textual input
+        // user is writing in the x or y-coordinate textual input
         if (target.id == "robotX" || target.id == "robotY") {
           const localX = Number(this.currentRobot.querySelector("#robotX").value);
           const globalX = localX + canvasScript.origin.position.x;
 
-          // bad input, alert by turning input red
+          // bad x-input, alert by turning input red
           if (isNaN(localX) || globalX < canvasScript.MIN_X || globalX > canvasScript.MAX_X) {
             target.style.backgroundColor = "red";
             return;
           }
 
+          // if in 2d, validate the y-input
           let localY, globalY;
           if (canvasScript.is2d()) {
             localY = Number(this.currentRobot.querySelector("#robotY").value);
@@ -145,7 +146,7 @@ class Controller {
             }
           }
 
-          // good input, update robot position
+          // good input(s), update robot position
           target.style.backgroundColor = "";
           canvasScript.updateRobotPosition({
             robot: canvasScript.hasBubble,
@@ -193,9 +194,12 @@ class Controller {
     }
   }
 
+  /**
+   * Change in UI (faulty toggle, added robot, etc.) requires an update of the command input
+   */
   updateCommandInput() {
     const v = this.range;
-    const nextPosition = this.nextPosition ? this.nextPosition.value : undefined;
+    const nextPosition = this.nextPosition.value; // will be "undefined" in 2d.. defines behaviour of how next positions are computed
     const robots = [...canvasScript.robots].map(([label, {position: {x}, data: {faulty, localPosition: {y}}}]) => ({
       label,
       faulty,
@@ -205,6 +209,8 @@ class Controller {
     const command = {v, nextPosition, robots};
     this.commandInput.value = JSON.stringify(command, null, '\t');
 
+    // we know the command is good, no need to `parseCommandValue` it...
+    // but we need to make sure it has at least 2 robots for it to be 100% valid
     if (robots.length < 2) {
       this.goodCommandIcon.classList.remove("show");
       this.badCommandIcon.classList.add("show");
@@ -236,11 +242,14 @@ class Controller {
 
   /**
    * Go through the saved setups and display them in the setups dropdown
+   * Only show elements that are from the right dimension (1d or 2d)
    */
   populateSetupsDropdown() {
     for (let i = 0; i < localStorage.length; i++) {
       const setupName = localStorage.key(i);
       const dim = localStorage.getItem(setupName).startsWith("2d") ? "2d" : "1d";
+
+      // make sure the saved setup is of the same dimension as the current environment
       if (dim == canvasScript.dimension) {
         this.createSetupDropdownElement(setupName);
       }
@@ -294,6 +303,7 @@ class Controller {
     }
 
     // setup name is good; store the setup and remove the popover
+    // notice that the value stored starts with either "1d-" or "2d-" (or nothing in previous version)
     localStorage.setItem(setupName, `${canvasScript.dimension}-${this.commandInput.value}`);
     toastr.success("", "Setup saved!");
     this.destroyPopover();
@@ -312,9 +322,10 @@ class Controller {
       return;
     }
 
-    const setup = command.startsWith("1d") || command.startsWith("2d") ?
-      command.slice(3) :
-      command;
+    // get the command setup (trim the metadata, if any)
+    const setup = command.startsWith("1d-") || command.startsWith("2d-") ?
+      command.slice(3) : // ignore "1d-" or "2d-"
+      command; // previous way, contains the whole command already
 
     this.commandInput.value = setup;
     const parseError = this.parseCommandInput(setup);
@@ -360,7 +371,7 @@ class Controller {
         return badCommand("parameter v is absent or is not an integer between 1 and 575");
       }
 
-      // nextPosition must be either "all" or "most"
+      // nextPosition must be either "all" or "most" (if in 1d)
       if (canvasScript.is1d() && nextPosition != "all" && nextPosition != "most") {
         return badCommand("parameter nextPosition, if given, must be either 'all' or 'most'");
       }
@@ -552,8 +563,10 @@ class Controller {
 
   /**
    * Update the robot's bubble info (for now, we only update the x-position)
+   * 
    * @param {Object} param0:
-   *  x is the new x-position of the robot
+   *  x is the new local-x of the robot
+   *  y is the new local-y of the robot (if in 2d)
    */
   updateBubble({x, y}) {
     this.currentRobot.querySelector("#robotX").value = x;
