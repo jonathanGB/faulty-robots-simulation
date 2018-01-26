@@ -25,6 +25,20 @@ class CanvasScript {
   }
 
   /**
+   * Helper to find if current environment is 1d
+   */
+  is1d() {
+    return this.dimension == "1d";
+  }
+
+  /**
+   * Helper to find if current environement is 2d
+   */
+  is2d() {
+    return this.dimension == "2d";
+  }
+
+  /**
    * Move the view in the direction provided
    * 
    * @param {String} direction in which direction we want to move the view 
@@ -173,7 +187,7 @@ class CanvasScript {
    * Possibly change the origin (leftmost faulty); if so, change the local positions of robots (relative)
    */
   updateOrigin() {
-    if (this.dimension == "2d") {
+    if (this.is2d()) {
       return;
     }
 
@@ -223,7 +237,7 @@ class CanvasScript {
     for (let [, robot] of this.robots) {
       const {x} = robot.position;
 
-      if (this.dimension == "1d") {
+      if (this.is1d()) {
         robot.data.range.removeSegments();
         robot.data.range.addSegments([
           new Point(x - range, 50),
@@ -270,7 +284,7 @@ class CanvasScript {
       robot.position.x = globalX;
       robot.data.label.position.x = globalX;
 
-      if (this.dimension == "1d") {
+      if (this.is1d()) {
         robot.data.range.removeSegments();
         robot.data.range.addSegments([
           new Point(globalX - controller.range, 50),
@@ -329,7 +343,7 @@ class CanvasScript {
     // insert the new robots in the canvas
     command.forEach(({x, y, faulty, label}) => this.generateRobot({
       x: x + this.MIN_X, // shift to respect absolute-x
-      y: this.dimension == "2d" ? this.MIN_Y - y : undefined, // shift to respect absolute-y
+      y: this.is2d() ? this.MIN_Y - y : undefined, // shift to respect absolute-y
       faulty,
       label,
     }));
@@ -370,16 +384,16 @@ class CanvasScript {
         if (x < this.MIN_X || x > this.MAX_X) {
           return;
         }
-        if (this.dimension == "2d" && (y > this.MIN_Y || y < this.MAX_Y)) {
+        if (this.is2d() && (y > this.MIN_Y || y < this.MAX_Y)) {
           return;
         }
 
         this.updateOrigin();
 
-        y = Math.round(y);
+        y = Math.round(y); // round because "y" values onclick get a lot of decimals (from paperjs)
 
         let localX = x - this.origin.position.x;
-        let localY = this.dimension == "2d" ? this.origin.position.y - y : undefined;
+        let localY = this.is2d() ? this.origin.position.y - y : undefined;
         this.updateRobotPosition({robot, localX, globalX: x, localY, globalY: y});
 
         if (this.hasBubble == robot) {
@@ -452,7 +466,7 @@ class CanvasScript {
 
     // create the range of the vision — rectangle (1d) or circle (2d) centered on the robot —
     let range;
-    if (this.dimension == "1d") {
+    if (this.is1d()) {
       range = new Path.Line(new Point(x - controller.range, 50), new Point(x + controller.range, 50));
       range.strokeColor = '#F0AD4E';
       range.strokeWidth = 35;

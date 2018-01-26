@@ -30,7 +30,7 @@ class Controller {
     $(this.saveButton).popover();            
 
     // draw the initial canvas for setup
-    canvasScript.dimension == "1d" ?
+    canvasScript.is1d() ?
       canvasScript.initialDraw1d():
       canvasScript.initialDraw2d();
 
@@ -50,7 +50,7 @@ class Controller {
     this.robotVision.querySelectorAll("input").forEach(input => input.addEventListener("input", this));
     this.generateButton.addEventListener("click", this);
 
-    if (canvasScript.dimension == "1d") {
+    if (canvasScript.is1d()) {
       // make sure the default set is "2 most visible" for next position calculation
       this.nextPosition.value = "most";
       this.nextPosition.addEventListener("change", this);
@@ -135,7 +135,7 @@ class Controller {
           }
 
           let localY, globalY;
-          if (canvasScript.dimension == "2d") {
+          if (canvasScript.is2d()) {
             localY = Number(this.currentRobot.querySelector("#robotY").value);
             globalY = canvasScript.origin.position.y - localY;
 
@@ -195,13 +195,12 @@ class Controller {
 
   updateCommandInput() {
     const v = this.range;
-    const is2d = canvasScript.dimension == "2d";
     const nextPosition = this.nextPosition ? this.nextPosition.value : undefined;
     const robots = [...canvasScript.robots].map(([label, {position: {x}, data: {faulty, localPosition: {y}}}]) => ({
       label,
       faulty,
       x: x - canvasScript.MIN_X,
-      y: is2d ? y : undefined,
+      y: canvasScript.is2d() ? y : undefined,
     }));
     const command = {v, nextPosition, robots};
     this.commandInput.value = JSON.stringify(command, null, '\t');
@@ -362,7 +361,7 @@ class Controller {
       }
 
       // nextPosition must be either "all" or "most"
-      if (canvasScript.dimension == "1d" && nextPosition != "all" && nextPosition != "most") {
+      if (canvasScript.is1d() && nextPosition != "all" && nextPosition != "most") {
         return badCommand("parameter nextPosition, if given, must be either 'all' or 'most'");
       }
 
@@ -380,7 +379,7 @@ class Controller {
         // faulty: Boolean
         if (!label || typeof label != "string" || labels.has(label) ||
             x == undefined || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) ||
-            (canvasScript.dimension == "2d" && (y == undefined || typeof y != "number" || y < 0 || y > (canvasScript.MIN_Y - canvasScript.MAX_Y))) ||
+            (canvasScript.is2d() && (y == undefined || typeof y != "number" || y < 0 || y > (canvasScript.MIN_Y - canvasScript.MAX_Y))) ||
             faulty == undefined || typeof faulty != "boolean") {
           return badCommand("bad robot format");              
         } else {
@@ -546,7 +545,7 @@ class Controller {
     this.currentRobot.querySelector("#robotX").value = x;
     this.currentRobot.classList.remove("invisible");
     
-    if (canvasScript.dimension == "2d") {
+    if (canvasScript.is2d()) {
       this.currentRobot.querySelector("#robotY").value = y;
     }
   }
@@ -558,7 +557,7 @@ class Controller {
    */
   updateBubble({x, y}) {
     this.currentRobot.querySelector("#robotX").value = x;
-    if (canvasScript.dimension == "2d") {
+    if (canvasScript.is2d()) {
       this.currentRobot.querySelector("#robotY").value = y;
     }
   }
