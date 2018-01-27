@@ -450,12 +450,19 @@ class Controller {
     this.robotLabel.removeEventListener("click", this);
     this.currentRobot.querySelector("#robotX").removeEventListener("input", this);
     this.currentRobot.querySelector("#robotX").readOnly = true;
+    if (canvasScript.is2d()) {
+      this.currentRobot.querySelector("#robotY").removeEventListener("input", this);
+      this.currentRobot.querySelector("robotY").readOnly = true;
+    } else { // is1d
+      // nextPosition doesn't exist in 2d
+      this.nextPosition.removeEventListener("change", this);
+      this.nextPosition.disabled = true;
+    }
     this.robotVision.querySelectorAll("input").forEach(input => {
       input.removeEventListener("input", this);
       input.type == "range" ? input.disabled = true : input.readOnly = true;
     });
-    this.nextPosition.removeEventListener("change", this);
-    this.nextPosition.disabled = true;
+
     this.generateButton.removeEventListener("click", this);
     this.generateButton.disabled = true;
     this.commandInput.readOnly = true;
@@ -463,10 +470,11 @@ class Controller {
     canvasScript.removeSetupListeners();
     
     // store robots in increasing x-position; we have our iteration 0
-    this.states[0] = [...canvasScript.robots].map(([label, {data: {faulty, localPosition: {x}}}]) => ({
+    this.states[0] = [...canvasScript.robots].map(([label, {data: {faulty, localPosition: {x, y}}}]) => ({
       label,
       faulty,
       x,
+      y,
     }));
     this.states[0].sort((a, b) => a.x - b.x);
 
