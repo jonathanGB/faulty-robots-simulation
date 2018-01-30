@@ -66,10 +66,10 @@ function generate(iter, todo, state, range) {
  */
 function findRobotsVisible(state, currIndex, range) {
   const comparedRobot = state[currIndex];
-  let visibles = [];
+  let visibles = [comparedRobot];
 
   for (let i = 0; i < state.length; i++) {
-    // skip comparedRobot
+    // skip comparedRobot, already in list of visibles
     if (i == currIndex) {
       continue;
     }
