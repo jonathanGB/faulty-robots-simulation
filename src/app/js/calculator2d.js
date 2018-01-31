@@ -87,10 +87,10 @@ function findRobotsVisible(state, currIndex, range) {
 }
 
 /**
+ * Based on `Smallest Enclosing Disc` in "Computational Geometry - Algorithms and Applications - Third Edition"
  * 
  * @param {Array{Object}} P set of points {x, y}
- * @returns {Object} smallest disc containing all points in `P`
- * @returns {Disc}
+ * @returns {Disc} smallest disc containing all points in `P`
  */
 function miniDisc(P) {
   let [p1, p2] = P;
@@ -107,10 +107,11 @@ function miniDisc(P) {
 }
 
 /**
+ * Based on `Smallest Enclosing Disc` in "Computational Geometry - Algorithms and Applications - Third Edition"
  * 
- * @param {Array{Object}} P 
- * @param {Object} q
- * @returns {Disc}
+ * @param {Array{Object}} P set of points {x, y}
+ * @param {Object} q point {x, y} on the boundary of the new disc
+ * @returns {Disc} smallest enclosing disc for P with q on its boundary
  */
 function miniDiscWithPoint(P, q) {
   let [p1] = P;
@@ -127,18 +128,19 @@ function miniDiscWithPoint(P, q) {
 }
 
 /**
+ * Based on `Smallest Enclosing Disc` in "Computational Geometry - Algorithms and Applications - Third Edition"
  * 
- * @param {Array{Object}} P 
- * @param {Object} q1 
- * @param {Object} q2
- * @returns {Disc}
+ * @param {Array{Object}} P set of points {x, y}
+ * @param {Object} q1 point {x, y} on the boundary of the new disc
+ * @param {Object} q2 point {x, y} on the boundary of the new disc
+ * @returns {Disc} smallest enclosing disc for P with q1 and q2 on its boundary
  */
 function miniDiscWith2Points(P, q1, q2) {
   let D0 = new Disc(q1, q2);
 
   for (let pk of P) {
     if (!D0.contains(pk)) {
-      return D0.extend(pk);
+      return new Disc(q1, q2, pk);
     }
   }
 
