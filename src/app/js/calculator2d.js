@@ -150,7 +150,7 @@ function miniDiscWith2Points(P, q1, q2) {
 
   for (let pk of P) {
     if (!D0.contains(pk)) {
-      return new Disc(q1, q2, pk);
+      D0 = new Disc(q1, q2, pk);
     }
   }
 
