@@ -1,13 +1,21 @@
 "use strict";
 
-importScripts("disc.js")
+// we are in a WebWoker
+if (this.DedicatedWorkerGlobalScope !== undefined) {
+  importScripts("disc.js");
 
-// receiving messages (this file is a WebWorker)
-onmessage = ({data}) => {
-  if (data.type == "generate") {
-    generate(data.iter, data.todo, data.state, data.range);
+  // receiving messages (this file is a WebWorker)
+  onmessage = ({data}) => {
+    if (data.type == "generate") {
+      generate(data.iter, data.todo, data.state, data.range);
+    }
   }
+} else { // we are running in Node.js
+  global.Disc = require("./disc");
+  module.exports = miniDisc;
 }
+
+
 
 /**
  * Compute the next generation of robots' positions
@@ -31,7 +39,7 @@ function generate(iter, todo, state, range) {
       continue;
     }
 
-    const smallestEnglobingDisc = miniDisc(shuffle(visibles));
+    const smallestEnglobingDisc = miniDisc(visibles);
 
     currRobot.newX = minDisc.center.x;
     currRobot.newY = minDisc.center.y;
@@ -93,6 +101,8 @@ function findRobotsVisible(state, currIndex, range) {
  * @returns {Disc} smallest disc containing all points in `P`
  */
 function miniDisc(P) {
+  shuffle(P);
+
   let [p1, p2] = P;
   let D2 = new Disc(p1, p2);
 
@@ -150,7 +160,7 @@ function miniDiscWith2Points(P, q1, q2) {
 /**
  * Implementation of the Fisher-Yates shuffle
  * 
- * @param {Array} arr 
+ * @param {Array} arr
  */
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {

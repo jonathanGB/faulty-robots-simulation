@@ -76,3 +76,8 @@ function findDiscWith3Points({x: x1, y: y1}, {x: x2, y: y2}, {x: x3, y: y3}) {
 
   return {x, y, rSquared};
 }
+
+// export `Disc` if running inside Node (test suite)
+if (this.DedicatedWorkerGlobalScope === undefined) {
+  module.exports = Disc;
+}
