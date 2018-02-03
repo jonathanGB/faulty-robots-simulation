@@ -104,7 +104,7 @@ class CanvasScript {
     console.log(newGen)
 
     const iterationText = iteration.toString().padStart(3, "0");
-    const deltaY = iteration * 100; // delta in height when we translate the initial objects
+    const deltaY = iteration * (this.is1d() ? 100: 575); // delta in height when we translate the initial objects
     this.axis.clone().translate(0, deltaY);
     const separator = this.separator.clone();
     separator.translate(0, deltaY);
@@ -114,7 +114,7 @@ class CanvasScript {
     this.recenterView(separator.position.y);
 
     // display all robots of the new generation
-    for (const {label, faulty, x, colour} of newGen) {
+    for (const {label, faulty, x, y, colour} of newGen) {
       // get canvas-related info and clone objects
       const initialRobot = this.robots.get(label);
       const robot = initialRobot.clone();
@@ -123,17 +123,22 @@ class CanvasScript {
       const robotLocalPosition = {...initialRobot.data.localPosition};
       const absoluteX = x + this.origin.position.x; // absolute x-position of the new robot
       const deltaX = absoluteX - robot.position.x; // delta in x of the new robot to its x-position in the previous generation (to translate)
-      
+      const offsetY = this.is2d() ? robotLocalPosition.y - y : 0; // additional y-offset to consider in 2d
+
       // assign data to the new robot
-      robot.fillColor = colour;
-      robot.data.colour = colour;      
+      if (this.is1d()) {
+        // we don't use special colours in 2d
+        robot.fillColor = colour;
+        robot.data.colour = colour;
+      }
       robot.data.label = robotLabel;
       robot.data.range = robotRange;
       robot.data.localPosition = robotLocalPosition;
-      robot.translate(deltaX, deltaY);
-      robotLabel.translate(deltaX, deltaY);
-      robotRange.translate(deltaX, deltaY);
+      robot.translate(deltaX, deltaY + offsetY);
+      robotLabel.translate(deltaX, deltaY + offsetY);
+      robotRange.translate(deltaX, deltaY + offsetY);
       robotLocalPosition.x = x;
+      robotLocalPosition.y = y;
       robotLabel.set({content: label});
       robotRange.opacity = 0;      
 

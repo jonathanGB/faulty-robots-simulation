@@ -40,9 +40,8 @@ function generate(iter, todo, state, range) {
     }
 
     const smallestEnglobingDisc = miniDisc(visibles);
-
-    currRobot.newX = minDisc.center.x;
-    currRobot.newY = minDisc.center.y;
+    currRobot.newX = smallestEnglobingDisc.center.x;
+    currRobot.newY = smallestEnglobingDisc.center.y;
 
     newState.push(currRobot);
   }

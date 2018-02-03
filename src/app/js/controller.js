@@ -452,7 +452,7 @@ class Controller {
     this.currentRobot.querySelector("#robotX").readOnly = true;
     if (canvasScript.is2d()) {
       this.currentRobot.querySelector("#robotY").removeEventListener("input", this);
-      this.currentRobot.querySelector("robotY").readOnly = true;
+      this.currentRobot.querySelector("#robotY").readOnly = true;
     } else { // is1d
       // nextPosition doesn't exist in 2d
       this.nextPosition.removeEventListener("change", this);
