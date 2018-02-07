@@ -3,7 +3,7 @@
 const ALL_VISIBLE = 0;
 const LEFT_RIGHT_MOST_VISIBLE = 1;
 
-let nextPositionCalculation = LEFT_RIGHT_MOST_VISIBLE;
+let nextPositionCalculation = LEFT_RIGHT_MOST_VISIBLE; // keep track of the state (either next position is average of all visible OR average of left/right-most visible)
 
 // receiving messages (this file is a WebWorker)
 onmessage = ({data}) => {

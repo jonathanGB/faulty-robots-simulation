@@ -8,8 +8,10 @@ paper.install(window);
 class CanvasScript {
   constructor() {
     this.canvas = document.getElementById("myCanvas");
-    this.MIN_X = 50; // absolute x-coordinate of the beginning of the axis
-    this.MAX_X = 1200; // absolute x-coordinate of the end of the axis
+    this.MIN_X; // absolute x-coordinate of the beginning of the x-axis (set by initialDraw)
+    this.MAX_X; // absolute x-coordinate of the end of the x-axis (set by initialDraw)
+    this.MIN_Y = 550; // absolute x-coordinate of the beginning of the y-axis
+    this.MAX_Y = 50; // absolute x-coordinate of the end of the y-axis
     this.axis = null; // reference to the axis object of the 0th generation
     this.axisHitBox = null; // reference to the axis-hitbox object of the 0th generation
     this.separator = null; // reference to the axis-hitbox object of the 0th generation
@@ -17,8 +19,23 @@ class CanvasScript {
     this.hasBubble = null; // reference to the robot displayed in the bubble
     this.robots = new Map(); // map label -> robot object
     this.origin = null; // reference to the origin object of the 0th generation
+    this.dimension = document.body.dataset.dimension; // store "1d" or "2d"
 
     paper.setup(this.canvas);
+  }
+
+  /**
+   * Helper to find if current environment is 1d
+   */
+  is1d() {
+    return this.dimension == "1d";
+  }
+
+  /**
+   * Helper to find if current environement is 2d
+   */
+  is2d() {
+    return this.dimension == "2d";
   }
 
   /**
@@ -87,7 +104,7 @@ class CanvasScript {
     console.log(newGen)
 
     const iterationText = iteration.toString().padStart(3, "0");
-    const deltaY = iteration * 100; // delta in height when we translate the initial objects
+    const deltaY = iteration * (this.is1d() ? 100: 575); // delta in height when we translate the initial objects
     this.axis.clone().translate(0, deltaY);
     const separator = this.separator.clone();
     separator.translate(0, deltaY);
@@ -97,7 +114,7 @@ class CanvasScript {
     this.recenterView(separator.position.y);
 
     // display all robots of the new generation
-    for (const {label, faulty, x, colour} of newGen) {
+    for (const {label, faulty, x, y, colour} of newGen) {
       // get canvas-related info and clone objects
       const initialRobot = this.robots.get(label);
       const robot = initialRobot.clone();
@@ -106,17 +123,22 @@ class CanvasScript {
       const robotLocalPosition = {...initialRobot.data.localPosition};
       const absoluteX = x + this.origin.position.x; // absolute x-position of the new robot
       const deltaX = absoluteX - robot.position.x; // delta in x of the new robot to its x-position in the previous generation (to translate)
-      
+      const offsetY = this.is2d() ? robotLocalPosition.y - y : 0; // additional y-offset to consider in 2d
+
       // assign data to the new robot
-      robot.fillColor = colour;
-      robot.data.colour = colour;      
+      if (this.is1d()) {
+        // we don't use special colours in 2d
+        robot.fillColor = colour;
+        robot.data.colour = colour;
+      }
       robot.data.label = robotLabel;
       robot.data.range = robotRange;
       robot.data.localPosition = robotLocalPosition;
-      robot.translate(deltaX, deltaY);
-      robotLabel.translate(deltaX, deltaY);
-      robotRange.translate(deltaX, deltaY);
+      robot.translate(deltaX, deltaY + offsetY);
+      robotLabel.translate(deltaX, deltaY + offsetY);
+      robotRange.translate(deltaX, deltaY + offsetY);
       robotLocalPosition.x = x;
+      robotLocalPosition.y = y;
       robotLabel.set({content: label});
       robotRange.opacity = 0;      
 
@@ -166,10 +188,14 @@ class CanvasScript {
   }
 
   /**
-   * Setup only!
+   * 1D Setup only!
    * Possibly change the origin (leftmost faulty); if so, change the local positions of robots (relative)
    */
   updateOrigin() {
+    if (this.is2d()) {
+      return;
+    }
+
     console.log("update origin")
     const currOriginX = this.origin.position.x;
 
@@ -216,11 +242,16 @@ class CanvasScript {
     for (let [, robot] of this.robots) {
       const {x} = robot.position;
 
-      robot.data.range.removeSegments();
-      robot.data.range.addSegments([
-        new Point(x - range, 50),
-        new Point(x + range, 50),
-      ]);
+      if (this.is1d()) {
+        // remove the previous vision "rectangle" and update with new width
+        robot.data.range.removeSegments();
+        robot.data.range.addSegments([
+          new Point(x - range, 50),
+          new Point(x + range, 50),
+        ]);
+      } else {
+        robot.data.range.scale(range / (robot.data.range.bounds.width / 2)); // updates the vision disk's radius
+      }
     }
   }
 
@@ -241,7 +272,7 @@ class CanvasScript {
     this.hasBubble.remove();
 
     // update bubble
-    this.hasBubble = replacement
+    this.hasBubble = replacement;
     this.updateOrigin();
   }
 
@@ -252,16 +283,34 @@ class CanvasScript {
    *  robot is the robot object that we want to update
    *  localX is the local-x of the robot
    *  globalX is the absolute-x of the robot
+   *  localY is the local-y of the robot
+   *  globalY is the absolute-y of the robot
    */
-  updateRobotPosition({robot, localX, globalX}) {
-    robot.data.localPosition.x = localX;
-    robot.position.x = globalX;
-    robot.data.label.position.x = globalX;
-    robot.data.range.removeSegments();
-    robot.data.range.addSegments([
-      new Point(globalX - controller.range, 50),
-      new Point(globalX + controller.range, 50),
-    ]);
+  updateRobotPosition({robot, localX, globalX, localY, globalY}) {
+    if (!isNaN(localX)) {
+      robot.data.localPosition.x = localX;
+      robot.position.x = globalX;
+      robot.data.label.position.x = globalX;
+
+      if (this.is1d()) {
+        robot.data.range.removeSegments();
+        robot.data.range.addSegments([
+          new Point(globalX - controller.range, 50),
+          new Point(globalX + controller.range, 50),
+        ]);
+      } 
+    }
+
+    if (this.is2d()) {
+      robot.data.localPosition.y = localY;
+      robot.position.y = globalY;
+      robot.data.label.position.y = globalY;
+      robot.data.range.position.set({
+        x: globalX,
+        y: globalY,
+      });
+    }
+
     controller.updateCommandInput();
   }
 
@@ -271,11 +320,12 @@ class CanvasScript {
    * We need to replace the robot (because the shape changes)
    */
   toggleFaulty() {
-    let {data: {faulty, label: {content: label}}, position: {x}} = this.hasBubble;
+    let {data: {faulty, label: {content: label}}, position: {x, y}} = this.hasBubble;
     let newRobotData = {
       faulty: !faulty,
       label,
       x,
+      y,
     };
 
     let newRobot = this.generateRobot(newRobotData, true);
@@ -298,8 +348,9 @@ class CanvasScript {
     this.updateOrigin();
 
     // insert the new robots in the canvas
-    command.forEach(({x, faulty, label}) => this.generateRobot({
+    command.forEach(({x, y, faulty, label}) => this.generateRobot({
       x: x + this.MIN_X, // shift to respect absolute-x
+      y: this.is2d() ? this.MIN_Y - y : undefined, // shift to respect absolute-y
       faulty,
       label,
     }));
@@ -312,11 +363,12 @@ class CanvasScript {
    * @param {Object} param0:
    *  faulty is if the robot to create is faulty
    *  label is the label of the robot to create
-   *  x is the x-coordinate of the robot to create
+   *  x is the absolute-x of the robot to create
+   *  y is the absolute-y of the robot to create
    * @param {Bool} isReplacement behaviour of generate varies slightly if it's a new robot or one we replace
    */
-  generateRobot({faulty, label, x}, isReplacement=false) {
-    let center = new Point(x, 50); // 50 is the y-coordinate of the axis during setup
+  generateRobot({faulty, label, x, y}, isReplacement=false) {
+    let center = new Point(x, y || 50); // 50 is the y-coordinate of the axis during setup in 1D
     let radius = 15;
     let robot = faulty ? // faulty robot are squares; non-faulty are circles
       new Path.RegularPolygon(center, 4, radius + 5) :
@@ -327,26 +379,33 @@ class CanvasScript {
     robot.data.faulty = faulty;
     robot.data.localPosition = {
       x: x - this.origin.position.x,
+      y: this.is2d() ? this.origin.position.y - y : undefined, // set local-y if y exists 
     };
     robot.strokeColor = "black";
     
     // assign listeners to robot during setup (some of them are removed once setup is complete)
     robot.on({
-      mousedrag: ({target, point: {x}}) => {
+      mousedrag: ({target, point: {x, y}}) => {
         this.canvas.style.cursor = "move";
 
         // don't exit the axis limits
         if (x < this.MIN_X || x > this.MAX_X) {
           return;
         }
+        if (this.is2d() && (y > this.MIN_Y || y < this.MAX_Y)) {
+          return;
+        }
 
         this.updateOrigin();
 
+        y = Math.round(y); // round because "y" values onclick get a lot of decimals (from paperjs)
+
         let localX = x - this.origin.position.x;
-        this.updateRobotPosition({robot, localX, globalX: x});
+        let localY = this.is2d() ? this.origin.position.y - y : undefined;
+        this.updateRobotPosition({robot, localX, globalX: x, localY, globalY: y});
 
         if (this.hasBubble == robot) {
-          controller.updateBubble({x: localX})
+          controller.updateBubble({x: localX, y: localY})
         }
       },
       mouseenter: () => {
@@ -413,12 +472,18 @@ class CanvasScript {
       }
     });
 
-    // create the range of the vision (rectangle centered on the robot)
-    let range = new Path.Line(new Point(x - controller.range, 50), new Point(x + controller.range, 50));
+    // create the range of the vision — rectangle (1d) or circle (2d) centered on the robot —
+    let range;
+    if (this.is1d()) {
+      range = new Path.Line(new Point(x - controller.range, 50), new Point(x + controller.range, 50));
+      range.strokeColor = '#F0AD4E';
+      range.strokeWidth = 35;
+    } else {
+      range = new Path.Circle(new Point(x, y), controller.range);
+      range.fillColor = '#F0AD4E';
+    }
     range.sendToBack();
-    range.strokeColor = '#F0AD4E';
-    range.strokeWidth = 35;
-    range.opacity = 0;
+    range.opacity = isReplacement ? 1 : 0; // replacement's range will be shown (opacity 1) automatically, otherwise range is hidden by default
     robot.data.range = range;
 
     return robot;
@@ -431,7 +496,10 @@ class CanvasScript {
    * These objects created are stored, to be reused for the next generations 
    * (which simply clone them, then translate them)
    */
-  initialDraw() {
+  initialDraw1d() {
+    this.MIN_X = 50;
+    this.MAX_X = 1200;
+
     // draw axis, and store for further use (cloning)
     let axis = new Path();
     axis.strokeColor = 'black';
@@ -487,6 +555,70 @@ class CanvasScript {
     origin.add(new Point(this.MIN_X, 20));
     origin.add(new Point(this.MIN_X, 80));
     this.origin = origin;
+  }
+
+    /**
+   * Before setup (once)!
+   * 
+   * Draw the initial canvas (axis, axisHitbox, iterationText, origin, generation separator)
+   * These objects created are stored, to be reused for the next generations 
+   * (which simply clone them, then translate them)
+   */
+  initialDraw2d() {
+    this.MIN_X = 100;
+    this.MAX_X = 1100;
+
+    // draw axis, and store for further use (cloning)
+    let axis = new Path();
+    axis.strokeColor = 'black';
+    axis.strokeWidth = 3;
+    axis.strokeJoin = "bevel"
+    axis.add(new Point(100, 50));
+    axis.add(new Point(100, 550));
+    axis.add(new Point(1100, 550));
+    this.axis = axis;
+
+    let axisHitBox = new Path.Rectangle(new Rectangle(100, 50, 1000, 500)); // whole quadrant is a hitbox
+    axisHitBox.fillColor = "white";
+    axisHitBox.opacity = 0;
+    axisHitBox.on({
+      click: ({event: {shiftKey: faulty}, point: {x, y}}) => {
+        let newRobotData = {
+          faulty,
+          label: this.generateRobotLabel(),
+          x,
+          y: Math.round(y),
+        };
+
+        this.generateRobot(newRobotData);
+        controller.changeGenerateStatus();
+        controller.updateCommandInput();
+      },
+      mousemove: () => {
+        this.canvas.style.cursor = "pointer";
+      },
+      mouseleave: () => {
+        this.canvas.style.cursor = "default";
+      }
+    });
+    this.axisHitBox = axisHitBox;
+
+    // draw iteration number
+    let iterationText = new PointText(new Point(50, 305));
+    iterationText.justification = 'left';
+    iterationText.fillColor = 'red';
+    iterationText.fontSize = 20;
+    iterationText.content = '000';
+    this.iterationText = iterationText;
+
+    // draw separator
+    let separator = new Path();
+    separator.strokeColor = "#777";
+    separator.add(new Point(0, 575));
+    separator.add(new Point(1204, 575));
+    this.separator = separator;
+
+    this.origin = new Path([new Point(100, 550)]);
   }
 
   /**

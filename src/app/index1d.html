@@ -2,16 +2,17 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Simulation</title>
+    <title>Simulation 1D</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="style/bootstrap.min.css" rel="stylesheet">
     <link href="style/toastr.min.css" rel="stylesheet">    
     <link rel="stylesheet" href="style/style.css">
+    <link rel="icon" href="img/favicon.png"> 
   </head>
-  <body class="container-fluid">
+  <body class="container-fluid" data-dimension="1d">
     <header>
-        <h1 class="text-center">Faulty Robots Simulation</h1>
+        <h1 class="text-center">Faulty Robots Simulation 1D</h1>
     </header>
 
     <main>
@@ -28,14 +29,14 @@
             </ul>
           </div>
           <button id="save" class="btn btn-success" disabled="true" data-html="true" data-title="Save command" data-placement="bottom">Save setup</button>
-          <button class="btn btn-warning" onclick="location.reload()">Restart</button>
+          <button class="btn btn-warning" onclick="location.reload(true)">Restart</button>
         </div>
         <div class="flex">
           <section id="currentRobot" class="invisible">
             <h4>
               <span id="robotLabel"></span> <span id="remove" class="label label-danger">Remove</span>
             </h4>
-            x: <input id="robotX" type="text"></span>
+            x <input id="robotX" type="text">
           </section><section id="nextPositionContainer">
             <label for="nextPosition">Next position calculated: </label>
             <select id="nextPosition">
@@ -43,7 +44,7 @@
               <option value="all">all visible robots</option>
             </select>
           </section><section id="robotVisionContainer">
-            v: <input id="robotVisionValue" type="number" min="1" max="575" value="100" step="1"><br>
+            v <input id="robotVisionValue" type="number" min="1" max="575" value="100" step="1"><br>
             <input id="robotVisionSlider" type="range" min="1" max="575" value="100" step="1">
           </section><section id="commandContainer">
             <i class="expand glyphicon glyphicon-resize-full"></i>
