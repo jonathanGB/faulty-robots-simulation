@@ -29,7 +29,8 @@ function generate(iter, todo, state, range) {
     return;
   }
 
-  const newState = [];  
+  state = getUniquePositions(state); // remove robots at exact duplicate coordinates
+  const newState = [];
   for (let i = 0; i < state.length; ++i) {
     let currRobot = state[i];
     const visibles = findRobotsVisible(state, i, range);
@@ -50,7 +51,7 @@ function generate(iter, todo, state, range) {
     robot.x = robot.newX || robot.x;
     robot.y = robot.newY || robot.y;
     delete robot.newX;
-    delete robot.newY;
+    delete robot.newY;   
   }
   
   postMessage({
@@ -62,6 +63,30 @@ function generate(iter, todo, state, range) {
   });
 
   return generate(iter + 1, todo - 1, newState, range);
+}
+
+/**
+ * From a given list, only return robots that are at distinct coordinates
+ * We realized that if 2 or more robots have the same coordinates and end up in `findDiscWith3Points`, we get a resulting disc that is wrong (infinite disc). 
+ * Therefore, removing duplicates is necessary.
+ * 
+ * @param {Array} robots 
+ */
+function getUniquePositions(robots) {
+  let uniqueRobotsHash = new Set();
+  let uniques = [];
+
+  for (const currRobot of robots) {
+    let currRobotHash = `${currRobot.x}-${currRobot.y}`; // hash should be unique (only x and y values)
+    
+    // if currRobotHash is not present in the set, this robot is currently unique at this position, so remember it
+    if (!uniqueRobotsHash.has(currRobotHash)) {
+      uniqueRobotsHash.add(currRobotHash);
+      uniques.push(currRobot);
+    }
+  }
+
+  return uniques;
 }
 
 /**
