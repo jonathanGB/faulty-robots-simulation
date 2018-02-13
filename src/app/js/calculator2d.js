@@ -70,18 +70,19 @@ function generate(iter, todo, state, range) {
  * We realized that if 2 or more robots have the same coordinates and end up in `findDiscWith3Points`, we get a resulting disc that is wrong (infinite disc). 
  * Therefore, removing duplicates is necessary.
  * 
+ * Since then, we restricted even more: duplicates now also include robots that are within 1e-10 (if we keep it squared, it means within 1e-20)
+ * 
  * @param {Array} robots 
  */
 function getUniquePositions(robots) {
-  let uniqueRobotsHash = new Set();
   let uniques = [];
 
   for (const currRobot of robots) {
-    let currRobotHash = `${currRobot.x}-${currRobot.y}`; // hash should be unique (only x and y values)
-    
-    // if currRobotHash is not present in the set, this robot is currently unique at this position, so remember it
-    if (!uniqueRobotsHash.has(currRobotHash)) {
-      uniqueRobotsHash.add(currRobotHash);
+    const robotsWithin = uniques.filter(uniqueRobot => {
+      return (uniqueRobot.x - currRobot.x) ** 2 + (uniqueRobot.y - currRobot.y) ** 2 <= 1e-20;
+    });
+
+    if (robotsWithin.length == 0) {
       uniques.push(currRobot);
     }
   }
