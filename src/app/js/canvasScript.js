@@ -18,6 +18,7 @@ class CanvasScript {
     this.iterationText = null; // reference to the iterationText object of the 0th generation
     this.hasBubble = null; // reference to the robot displayed in the bubble
     this.robots = new Map(); // map label -> robot object
+    this.generations = [this.robots]; // keep track of robots at each generation
     this.origin = null; // reference to the origin object of the 0th generation
     this.dimension = document.body.dataset.dimension; // store "1d" or "2d"
 
@@ -95,6 +96,88 @@ class CanvasScript {
   }
 
   /**
+   * Decides whether to show the visible robots in a 1D or 2D environment
+   * 
+   * @param {Object} target reference robot from which we want to see its visible robots
+   */
+  showVisibles(target) {
+    const iteration = target.data.iteration || 0;
+    const state = this.generations[iteration];
+    const rangeSquared = controller.range ** 2;
+
+    this.is1d() ?
+      this.show1dVisibles(target, state, rangeSquared) :
+      this.show2dVisibles(target, state, rangeSquared);
+  }
+
+  /**
+   * Show robots visible to the target in a 1D environment
+   * 
+   * @param {Object} target reference robot from which we want to see its visible robots
+   * @param {Map} state stores all the canvas robots (label => robot)
+   * @param {Number} rangeSquared range (squared) of the target
+   */
+  show1dVisibles(target, state, rangeSquared) {
+    // TODO
+  }
+
+  /**
+   * Show robots visible to the target in a 2D environment
+   * 
+   * @param {Object} target reference robot from which we want to see its visible robots
+   * @param {Map} state stores all the canvas robots (label => robot)
+   * @param {Number} rangeSquared range (squared) of the target
+   */
+  show2dVisibles(target, state, rangeSquared) {
+    const {data: {localPosition: {x: x1, y: y1}}} = target;
+
+    for (let [, currRobot] of state) {
+      const {data: {localPosition: {x: x2, y: y2}}} = currRobot;
+      const distanceSquared = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+
+      if (distanceSquared <= rangeSquared) {
+        currRobot.fillColor = "cyan";
+      }
+    }
+  }
+
+  /**
+   * Decides whether to hide the visibility hints in a 1D or 2D environment
+   * 
+   * @param {Integer} iteration keep track of the iteration we want to remove the hints
+   */
+  hideVisibles(iteration=0) {
+    this.is1d() ?
+      this.hide1dVisibles(iteration) :
+      this.hide2dVisibles(iteration);
+  }
+
+  /**
+   * Hides the visibility hints in a 1D environment
+   * 
+   * @param {Integer} iteration keep track of the iteration we want to remove the hints
+   */
+  hide1dVisibles(iteration) {
+    // TODO
+  }
+
+  /**
+   * Hides the visibility hints in a 2D environment
+   * 
+   * @param {Integer} iteration keep track of the iteration we want to remove the hints
+   */
+  hide2dVisibles(iteration) {
+    for (let [, currRobot] of this.generations[iteration]) {
+      currRobot.fillColor = currRobot.data.colour;
+    }
+  }
+
+  hideThenShowVisibles(target) {
+    this.hideVisibles(target.data.iteration);
+    this.showVisibles(target);
+  }
+
+  /**
    * New generation requested, display it
    * 
    * @param {Integer} iteration number of the new generation 
@@ -103,6 +186,8 @@ class CanvasScript {
   displayNewGeneration(iteration, newGen) {
     console.log(newGen)
 
+    this.generations[iteration] = new Map();
+    const generations = this.generations[iteration];
     const iterationText = iteration.toString().padStart(3, "0");
     const deltaY = iteration * (this.is1d() ? 100: 575); // delta in height when we translate the initial objects
     this.axis.clone().translate(0, deltaY);
@@ -118,6 +203,8 @@ class CanvasScript {
       // get canvas-related info and clone objects
       const initialRobot = this.robots.get(label);
       const robot = initialRobot.clone();
+      robot.data.iteration = iteration;
+      generations.set(label, robot);
       const robotLabel = initialRobot.data.label.clone();
       const robotRange = initialRobot.data.range.clone();
       const robotLocalPosition = {...initialRobot.data.localPosition};
@@ -128,9 +215,9 @@ class CanvasScript {
       // assign data to the new robot
       if (this.is1d()) {
         // we don't use special colours in 2d
-        robot.fillColor = colour;
         robot.data.colour = colour;
       }
+      robot.fillColor = colour || robot.data.colour;
       robot.data.label = robotLabel;
       robot.data.range = robotRange;
       robot.data.localPosition = robotLocalPosition;
@@ -147,6 +234,7 @@ class CanvasScript {
         doubleclick: ({target}) => {
           if (this.hasBubble) {
             controller.hideBubble();
+            this.hideVisibles(target.data.iteration);
             this.hasBubble.data.range.opacity = 0;
   
             if (this.hasBubble == target) {
@@ -156,6 +244,7 @@ class CanvasScript {
           }
   
           controller.showBubble(target.data);
+          this.showVisibles(target);
           this.hasBubble = target;
           this.hasBubble.data.range.opacity = 1;
         }
@@ -252,6 +341,10 @@ class CanvasScript {
       } else {
         robot.data.range.scale(range / (robot.data.range.bounds.width / 2)); // updates the vision disk's radius
       }
+    }
+
+    if (this.hasBubble) {
+      this.hideThenShowVisibles(this.hasBubble);
     }
   }
 
@@ -405,7 +498,8 @@ class CanvasScript {
         this.updateRobotPosition({robot, localX, globalX: x, localY, globalY: y});
 
         if (this.hasBubble == robot) {
-          controller.updateBubble({x: localX, y: localY})
+          controller.updateBubble({x: localX, y: localY});
+          this.hideThenShowVisibles(target);
         }
       },
       mouseenter: () => {
@@ -424,6 +518,7 @@ class CanvasScript {
         // if new target we want to display its bubble; otherwise, we hide the bubble (toggle)
         if (this.hasBubble) {
           controller.hideBubble();
+          this.hideVisibles(target.data.iteration);
           this.hasBubble.data.range.opacity = 0;
 
           if (this.hasBubble == target) {
@@ -433,6 +528,7 @@ class CanvasScript {
         }
 
         controller.showBubble(target.data);
+        this.showVisibles(target);
         this.hasBubble = target;
         this.hasBubble.data.range.opacity = 1;
       }
