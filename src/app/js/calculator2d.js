@@ -29,11 +29,10 @@ function generate(iter, todo, state, range) {
     return;
   }
 
-  state = getUniquePositions(state); // remove robots at exact duplicate coordinates
+  const uniques = getUniqueRobots(state);
   const newState = [];
-  for (let i = 0; i < state.length; ++i) {
-    let currRobot = state[i];
-    const visibles = findRobotsVisible(state, i, range);
+  for (let currRobot of state) {
+    const visibles = findRobotsVisible(currRobot, uniques, range);
 
     if (currRobot.faulty || visibles.length < 2) {
       newState.push(currRobot);
@@ -70,18 +69,17 @@ function generate(iter, todo, state, range) {
  * We realized that if 2 or more robots have the same coordinates and end up in `findDiscWith3Points`, we get a resulting disc that is wrong (infinite disc). 
  * Therefore, removing duplicates is necessary.
  * 
- * Since then, we restricted even more: duplicates now also include robots that are within 1e-10 (if we keep it squared, it means within 1e-20)
+ * Since then, we restricted even more: duplicates now also include robots that are within a distance of 1e-10
  * 
  * @param {Array} robots 
+ * @returns {Array}
  */
-function getUniquePositions(robots) {
+function getUniqueRobots(robots) {
   let uniques = [];
 
   for (const currRobot of robots) {
-    const robotsWithin = uniques.filter(uniqueRobot => {
-      return (uniqueRobot.x - currRobot.x) ** 2 + (uniqueRobot.y - currRobot.y) ** 2 <= 1e-20;
-    });
-
+    const robotsWithin = findRobotsVisible(currRobot, uniques, 1e-10);
+    
     if (robotsWithin.length == 0) {
       uniques.push(currRobot);
     }
@@ -93,30 +91,18 @@ function getUniquePositions(robots) {
 /**
  * Retuns the robots visible to a reference robot within a certain range
  * 
- * @param {Array{Object}} state current state of robots' positions
- * @param {Integer} currIndex index of the comparedRobot 
- * @param {Number} range vision v of all robots 
+ * @param {Object} comparedRobot point of reference
+ * @param {Array} state current state of robots' positionss
+ * @param {Number} range vision v of all robots
+ * @returns {Array}
  */
-function findRobotsVisible(state, currIndex, range) {
-  const comparedRobot = state[currIndex];
-  let visibles = [comparedRobot];
-
-  for (let i = 0; i < state.length; i++) {
-    // skip comparedRobot, already in list of visibles
-    if (i == currIndex) {
-      continue;
-    }
-
+function findRobotsVisible(comparedRobot, state, range) {
+  return state.filter(currRobot => {
     // compute distance-squared between comparedRobot and currRobot
     // we keep it squared so we don't have to worry about precision errors by computing the square root
-    const currRobot = state[i];
     const distanceSquared = (comparedRobot.x - currRobot.x) ** 2 + (comparedRobot.y - currRobot.y) ** 2;
-    if (distanceSquared <= range ** 2) {
-      visibles.push(currRobot);
-    }
-  }
-
-  return visibles;
+    return distanceSquared <= range ** 2;
+  })
 }
 
 /**
