@@ -21,6 +21,7 @@ class CanvasScript {
     this.generations = [this.robots]; // keep track of robots at each generation
     this.origin = null; // reference to the origin object of the 0th generation
     this.dimension = document.body.dataset.dimension; // store "1d" or "2d"
+    this.dots = []; // keep track of the dots (in 1d) that serves as "visibility" hints
 
     paper.setup(this.canvas);
   }
@@ -103,11 +104,10 @@ class CanvasScript {
   showVisibles(target) {
     const iteration = target.data.iteration || 0;
     const state = this.generations[iteration];
-    const rangeSquared = controller.range ** 2;
 
     this.is1d() ?
-      this.show1dVisibles(target, state, rangeSquared) :
-      this.show2dVisibles(target, state, rangeSquared);
+      this.show1dVisibles(target, state, controller.range) :
+      this.show2dVisibles(target, state, controller.range ** 2);
   }
 
   /**
@@ -115,10 +115,23 @@ class CanvasScript {
    * 
    * @param {Object} target reference robot from which we want to see its visible robots
    * @param {Map} state stores all the canvas robots (label => robot)
-   * @param {Number} rangeSquared range (squared) of the target
+   * @param {Number} rangeSquared range of the target
    */
-  show1dVisibles(target, state, rangeSquared) {
-    // TODO
+  show1dVisibles(target, state, range) {
+    const {data: {localPosition: {x: x1}}} = target;
+
+    for (let [, currRobot] of state) {
+      const {data: {localPosition: {x: x2}}} = currRobot;
+      const distance = Math.abs(x1 - x2);
+
+      if (distance <= range) {
+        const dotPosition = new Point(0, -40).add(currRobot.position); // dot is 40 units in `y` over `currRobot`
+        let dot = new Path.Star(dotPosition, 6, 3, 8);
+        dot.fillColor = "#F0AD4E";
+
+        this.dots.push(dot);
+      }
+    }
   }
 
   /**
@@ -148,17 +161,22 @@ class CanvasScript {
    */
   hideVisibles(iteration=0) {
     this.is1d() ?
-      this.hide1dVisibles(iteration) :
+      this.hide1dVisibles() :
       this.hide2dVisibles(iteration);
   }
 
   /**
    * Hides the visibility hints in a 1D environment
    * 
-   * @param {Integer} iteration keep track of the iteration we want to remove the hints
    */
-  hide1dVisibles(iteration) {
-    // TODO
+  hide1dVisibles() {
+    const lastDot = this.dots.pop();
+    if (!lastDot) {
+      return;
+    }
+
+    lastDot.removeSegments(); // deletes the dot
+    return this.hide1dVisibles();
   }
 
   /**
