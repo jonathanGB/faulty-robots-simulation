@@ -517,7 +517,10 @@ class CanvasScript {
 
         if (this.hasBubble == robot) {
           controller.updateBubble({x: localX, y: localY});
-          this.hideThenShowVisibles(target);
+        }
+        // need to update "visibility" hints if the bubble is shown, even though the moving target itself is not the bubble
+        if (this.hasBubble) {
+          this.hideThenShowVisibles(this.hasBubble);
         }
       },
       mouseenter: () => {
