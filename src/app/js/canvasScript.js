@@ -8,6 +8,7 @@ paper.install(window);
 class CanvasScript {
   constructor() {
     this.canvas = document.getElementById("myCanvas");
+    this.ipeTooltip = document.getElementById("ipe-tooltip");
     this.MIN_X; // absolute x-coordinate of the beginning of the x-axis (set by initialDraw)
     this.MAX_X; // absolute x-coordinate of the end of the x-axis (set by initialDraw)
     this.MIN_Y = 550; // absolute x-coordinate of the beginning of the y-axis
@@ -211,7 +212,30 @@ class CanvasScript {
     this.axis.clone().translate(0, deltaY);
     const separator = this.separator.clone();
     separator.translate(0, deltaY);
-    this.iterationText.clone().translate(0, deltaY).set({content: iterationText});
+    this.iterationText.clone().translate(0, deltaY).set({
+      content: iterationText,
+      data: {
+        iter: iteration,
+      },
+    }).on({
+      mouseenter: ({target}) => {
+        const TOOLTIP_WIDTH = 57;
+        // position tooltip (gets complicated due to unit count in canvas that vary depending on the zoom level)
+        const tooltipLeft = this.canvas.offsetLeft + ((target.point.x - view.bounds.x) * view.zoom) - TOOLTIP_WIDTH;
+        const tooltipTop = this.canvas.offsetTop + ((target.point.y - view.bounds.y - 24) * view.zoom); // 24 here helps center, but not perfect when zoom changes too much
+        this.ipeTooltip.style.top = `${tooltipTop}px`;
+        this.ipeTooltip.style.left = `${tooltipLeft}px`;
+        this.ipeTooltip.style.opacity = "1";
+        this.canvas.style.cursor = "pointer";
+      },
+      mouseleave: () => {
+        this.canvas.style.cursor = "default";
+        this.ipeTooltip.style.opacity = "0";
+      },
+      click: ({target: {content: iterLabel, data: {iter}}}) => {
+        ipe.exportToIPE(this.generations[iter], iterLabel);
+      },
+    });
     this.origin.clone().translate(0, deltaY);
 
     this.recenterView(separator.position.y);
@@ -656,7 +680,28 @@ class CanvasScript {
     iterationText.fillColor = 'red';
     iterationText.fontSize = 20;
     iterationText.content = '000';
+    iterationText.data.iter = 0;
     this.iterationText = iterationText;
+    iterationText.on({
+      mouseenter: ({target}) => {
+        const TOOLTIP_WIDTH = 57;
+        // position tooltip (gets complicated due to unit count in canvas that vary depending on the zoom level)
+        const tooltipLeft = this.canvas.offsetLeft + ((target.point.x - view.bounds.x) * view.zoom) - TOOLTIP_WIDTH;
+        const tooltipTop = this.canvas.offsetTop + ((target.point.y - view.bounds.y - 24) * view.zoom); // 24 here helps center, but not perfect when zoom changes too much
+        this.ipeTooltip.style.top = `${tooltipTop}px`;
+        this.ipeTooltip.style.left = `${tooltipLeft}px`;
+        this.ipeTooltip.style.opacity = "1";
+        this.canvas.style.cursor = "pointer";
+      },
+      mouseleave: () => {
+        this.canvas.style.cursor = "default";
+        this.ipeTooltip.style.opacity = "0";
+      },
+      click: ({target: {content: iterLabel, data: {iter}}}) => {
+        ipe.exportToIPE(this.generations[iter], iterLabel);
+      },
+    });
+
 
     // draw separator
     let separator = new Path();
@@ -726,7 +771,27 @@ class CanvasScript {
     iterationText.fillColor = 'red';
     iterationText.fontSize = 20;
     iterationText.content = '000';
+    iterationText.data.iter = 0;
     this.iterationText = iterationText;
+    iterationText.on({
+      mouseenter: ({target}) => {
+        const TOOLTIP_WIDTH = 57;
+        // position tooltip (gets complicated due to unit count in canvas that vary depending on the zoom level)
+        const tooltipLeft = this.canvas.offsetLeft + ((target.point.x - view.bounds.x) * view.zoom) - TOOLTIP_WIDTH;
+        const tooltipTop = this.canvas.offsetTop + ((target.point.y - view.bounds.y - 24) * view.zoom); // 24 here helps center, but not perfect when zoom changes too much
+        this.ipeTooltip.style.top = `${tooltipTop}px`;
+        this.ipeTooltip.style.left = `${tooltipLeft}px`;
+        this.ipeTooltip.style.opacity = "1";
+        this.canvas.style.cursor = "pointer";
+      },
+      mouseleave: () => {
+        this.canvas.style.cursor = "default";
+        this.ipeTooltip.style.opacity = "0";
+      },
+      click: ({target: {content: iterLabel, data: {iter}}}) => {
+        ipe.exportToIPE(this.generations[iter], iterLabel);
+      },
+    });
 
     // draw separator
     let separator = new Path();

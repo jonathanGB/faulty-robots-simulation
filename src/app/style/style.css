@@ -171,3 +171,28 @@ main {
 #robotY {
   margin-bottom: 5px;
 }
+
+#ipe-tooltip {
+  position: absolute;
+  opacity: 0;
+}
+
+#ipe-tooltip .body {
+  background: black;
+  color: #fffaf0;
+  display: inline-block;
+  padding: 6px;
+  border-radius: 5px;
+  font-style: italic;
+  font-weight: bold;
+}
+
+#ipe-tooltip .arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid black;
+  margin-left: -5px;
+}
