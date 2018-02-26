@@ -447,6 +447,10 @@ class CanvasScript {
     }
 
     controller.updateCommandInput();
+    
+    if (this.hasBubble) {
+      this.hideThenShowVisibles(this.hasBubble);
+    }
   }
 
   /**
@@ -489,6 +493,10 @@ class CanvasScript {
       faulty,
       label,
     }));
+
+    if (this.hasBubble) {
+      this.hideThenShowVisibles(this.hasBubble);
+    }
   }
 
   /**
