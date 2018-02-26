@@ -664,6 +664,10 @@ class CanvasScript {
         this.generateRobot(newRobotData);
         controller.changeGenerateStatus();
         controller.updateCommandInput();
+
+        if (this.hasBubble) {
+          this.hideThenShowVisibles(this.hasBubble);
+        }
       },
       mousemove: () => {
         this.canvas.style.cursor = "pointer";
@@ -755,6 +759,10 @@ class CanvasScript {
         this.generateRobot(newRobotData);
         controller.changeGenerateStatus();
         controller.updateCommandInput();
+
+        if (this.hasBubble) {
+          this.hideThenShowVisibles(this.hasBubble);
+        }
       },
       mousemove: () => {
         this.canvas.style.cursor = "pointer";
