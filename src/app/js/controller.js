@@ -134,6 +134,12 @@ class Controller {
             return;
           }
 
+          // in discrete mode, x-positions must be integers
+          if (this.nextPosition.value == "discrete" && !Number.isInteger(localX)) {
+            target.style.backgroundColor = "red";
+            return;
+          }
+
           // if in 2d, validate the y-input
           let localY, globalY;
           if (canvasScript.is2d()) {
@@ -371,9 +377,9 @@ class Controller {
         return badCommand("parameter v is absent or is not an integer between 1 and 575");
       }
 
-      // nextPosition must be either "all" or "most" (if in 1d)
-      if (canvasScript.is1d() && nextPosition != "all" && nextPosition != "most") {
-        return badCommand("parameter nextPosition, if given, must be either 'all' or 'most'");
+      // nextPosition must be either "all" or "most" or "discrete" (if in 1d)
+      if (canvasScript.is1d() && nextPosition != "all" && nextPosition != "most" && nextPosition != "discrete") {
+        return badCommand("parameter nextPosition, if given, must be either 'all' or 'most' or 'discrete'");
       }
 
       // command must be an array with at least 2 robots
@@ -385,11 +391,11 @@ class Controller {
       let labels = new Set();
       for (let {label, x, y, faulty} of command) {
         // label: String .. must be unique
-        // x: Number between 0 and MAX_X - MIN_X
+        // x: Number between 0 and MAX_X - MIN_X (and an integer if in "discrete" mode)
         // y: if 2D... Number between 0 and MIN_Y - MAX_Y
         // faulty: Boolean
         if (!label || typeof label != "string" || labels.has(label) ||
-            x == undefined || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) ||
+            x == undefined || typeof x != "number" || x < 0 || x > (canvasScript.MAX_X - canvasScript.MIN_X) || nextPosition == "discrete" && !Number.isInteger(x) ||
             (canvasScript.is2d() && (y == undefined || typeof y != "number" || y < 0 || y > (canvasScript.MIN_Y - canvasScript.MAX_Y))) ||
             faulty == undefined || typeof faulty != "boolean") {
           return badCommand("bad robot format");              

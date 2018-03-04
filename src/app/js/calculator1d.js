@@ -2,16 +2,25 @@
 
 const ALL_VISIBLE = 0;
 const LEFT_RIGHT_MOST_VISIBLE = 1;
+const DISCRETE = 2;
 
 let nextPositionCalculation = LEFT_RIGHT_MOST_VISIBLE; // keep track of the state (either next position is average of all visible OR average of left/right-most visible)
 
 // receiving messages (this file is a WebWorker)
 onmessage = ({data}) => {
   if (data.type == "generate") {
-    generate(data.iter, data.todo, data.state, data.range);
-  } else if (data.type == "update-nextPosition") {
+    return generate(data.iter, data.todo, data.state, data.range);
+  } 
+  
+  if (data.type == "update-nextPosition") {
     // update how we calculate next position
-    nextPositionCalculation = data.value == "all" ? ALL_VISIBLE : LEFT_RIGHT_MOST_VISIBLE;
+    if (data.value == "all") {
+      nextPositionCalculation = ALL_VISIBLE;
+    } else if (data.value == "most") {
+      nextPositionCalculation = LEFT_RIGHT_MOST_VISIBLE;
+    } else {
+      nextPositionCalculation = DISCRETE;
+    }
   }
 }
 
@@ -35,12 +44,13 @@ function generate(iter, todo, state, range) {
     // defines the robots visible that we consider for the next position calculation
     // either we care only about left/right-most visible OR
     // we care about all the robots visible (including the current robot itself)
-    let visiblesToConsider = nextPositionCalculation == LEFT_RIGHT_MOST_VISIBLE ?
+    // "discrete" rule has the same visibility rule as "left-right-most"
+    let visiblesToConsider = nextPositionCalculation == ALL_VISIBLE ?
+      [...lefts, currRobot, ...rights] :
       [
         lefts.length ? lefts[0] : currRobot, // if no robots on the left, left-most is itself
         rights.length ? rights[rights.length - 1] : currRobot, // if no robots on the right, right-most is itself
-      ] :
-      [...lefts, currRobot, ...rights];
+      ]
 
     // if not faulty: update position to average position; if faulty: keep the same
     // we store the new position in either cases in a temporary property (newX) to not interfere with other robots calculations
@@ -182,5 +192,9 @@ function* generateColour() {
  * @param {Array{Object}} arr Array of robots
  */
 function getAveragePosition(arr) {
-  return arr.reduce((sum, {x}) => sum + x, 0) / arr.length;
+  let avg = arr.reduce((sum, {x}) => sum + x, 0) / arr.length;
+  // discrete returns the floor value, other 2 rules just return the average as is
+  return nextPositionCalculation == DISCRETE ?
+    Math.floor(avg) :
+    avg;
 }
