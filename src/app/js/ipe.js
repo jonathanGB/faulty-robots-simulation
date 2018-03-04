@@ -23,25 +23,14 @@ class IPE {
       if (canvasScript.is1d()) {
         x = absX - canvasScript.MIN_X;
       }
-      const label = `<text transformations="translations" pos="${x - 1} ${y + 2}" stroke="white" type="label" halign="center" valign="center">${content}</text>`;
 
-      // faulty: draw a square and the label at the center
+      // faulty: draw a black disk
       if (faulty) {
-        return `<path stroke="black" fill="black">
-        ${x - 15} ${y + 15} m
-        ${x + 15} ${y + 15} l
-        ${x + 15} ${y - 15} l
-        ${x - 15} ${y - 15} l
-        h
-        </path>
-        ${label}`;
+        return `<use name="mark/disk(sx)" pos="${x} ${y}" size="large" stroke="black"/>`;
       }
 
-      // non-faulty: draw a circle and the label at the center
-      return `<path stroke="black" fill="black">
-      15 0 0 15 ${x} ${y} e
-      </path>
-      ${label}`;
+      // non-faulty: draw a white disk
+      return `<use name="mark/fdisk(sfx)" pos="${x} ${y}" size="large" stroke="black" fill="white"/>`;
     });
 
     // create a Blob, then a little hack to automatically download the IPE file
@@ -94,6 +83,22 @@ class IPE {
     <ipe version="70206" creator="Ipe 7.2.7">
     <info created="D:${nowStr}" modified="D:${nowStr}"/>
     <ipestyle name="basic">
+    <symbol name="mark/disk(sx)" transformations="translations">
+    <path fill="sym-stroke">
+    0.6 0 0 0.6 0 0 e
+    </path>
+    </symbol>
+    <symbol name="mark/fdisk(sfx)" transformations="translations">
+    <group>
+    <path fill="sym-fill">
+    0.5 0 0 0.5 0 0 e
+    </path>
+    <path fill="sym-stroke" fillrule="eofill">
+    0.6 0 0 0.6 0 0 e
+    0.4 0 0 0.4 0 0 e
+    </path>
+    </group>
+    </symbol>
     <layout origin="-20 -20" paper="1300 600"  frame="1300 600"/>
     <pen name="heavier" value="0.8"/>
     <pen name="fat" value="1.2"/>
