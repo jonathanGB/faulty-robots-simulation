@@ -3,6 +3,7 @@
 // we are in a WebWoker
 if (this.DedicatedWorkerGlobalScope !== undefined) {
   importScripts("disc.js");
+  importScripts("vector.js");
 
   // receiving messages (this file is a WebWorker)
   onmessage = ({data}) => {
@@ -39,9 +40,10 @@ function generate(iter, todo, state, range) {
       continue;
     }
 
-    const smallestEnglobingDisc = miniDisc(visibles);
-    currRobot.newX = smallestEnglobingDisc.center.x;
-    currRobot.newY = smallestEnglobingDisc.center.y;
+    const {center: ci} = miniDisc(visibles);
+    const connectedCenter = getConnectedCenter(range, ci, currRobot, visibles.filter(visible => visible != currRobot));
+    currRobot.newX = connectedCenter.x;
+    currRobot.newY = connectedCenter.y;
 
     newState.push(currRobot);
   }
@@ -166,6 +168,30 @@ function miniDiscWith2Points(P, q1, q2) {
   }
 
   return D0;
+}
+
+/**
+ * Apply the algorithm to make sure that the next position (ci) of the current robot (Ri) stills maintains connectivity
+ * with its neighbours (R)
+ * 
+ * @param {Integer} V 
+ * @param {Object} ci 
+ * @param {Object} Ri 
+ * @param {Array} R 
+ */
+function getConnectedCenter(V, ci, Ri, R) {
+  const Vgoal = new Vector([Ri, ci]);
+  const limit = Math.min(...R.map(Rj => {
+    const Vrirj = new Vector([Ri, Rj]);
+    const dj = Vrirj.norm;
+    const {cosθj, sinθj} = Vrirj.getCosAndSin(new Vector([Ri, ci]));
+    const lj = (dj / 2 * cosθj) + Math.sqrt((V / 2) ** 2 - (dj / 2 * sinθj) ** 2);
+
+    return lj;
+  }));
+
+  const D = Math.min(Vgoal.norm, limit);
+  return Vgoal.resize(D).end;
 }
 
 /**
