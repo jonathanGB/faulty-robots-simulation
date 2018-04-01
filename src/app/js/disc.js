@@ -54,22 +54,22 @@ function findDiscWith3Points({x: x1, y: y1}, {x: x2, y: y2}, {x: x3, y: y3}) {
   const M11 = x1 * (y2 - y3) -
               y1 * (x2 - x3) +
               x2 * y3 -
-              y2 * x3; // * (x^2 + y^2)
+              y2 * x3;
   const M12 = a21 * (y2 - y3) -
               y1 * (a31 - a41) +
               a31 * y3 -
-              y2 * a41; // * x
-  const M13 = -a21 * (x2 - x3) +
-              x1 * (a31 - a41) -
-              a31 * x3 +
-              x2 * a41; // * y
+              y2 * a41;
+  const M13 = a21 * (x2 - x3) -
+              x1 * (a31 - a41) +
+              a31 * x3 -
+              x2 * a41;
   const M14 = a21 * (x2 * y3 - y2 * x3) -
               x1 * (a31 * y3 - y2 * a41) +
-              y1 * (a31 * x3 - x2 * a41); // * 1
+              y1 * (a31 * x3 - x2 * a41);
 
   // compute the center (x,y) and the radius of the disc
   const x = M12 / M11 / 2; 
-  const y = M13 / M11 / 2;
+  const y = -M13 / M11 / 2;
   const rSquared = M14 / M11 +
                    x ** 2 +
                    y ** 2;
