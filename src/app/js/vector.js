@@ -34,7 +34,7 @@ class Vector {
    */
   getCosAndSin(otherVec) {
     const cosθj = this.scalarProduct(otherVec) / (this.norm * otherVec.norm);
-    const sinθj = Math.sqrt(1 - cosθj ** 2);
+    const sinθj = Math.sqrt(1 - cosθj ** 2) || 0; // OR 0 if sqrt returns NaN (approximation error)
 
     return {cosθj, sinθj};
   }

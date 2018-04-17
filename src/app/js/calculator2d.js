@@ -41,7 +41,7 @@ function generate(iter, todo, state, range) {
     }
 
     const {center: ci} = miniDisc(visibles);
-    const connectedCenter = getConnectedCenter(range, ci, currRobot, visibles.filter(visible => visible != currRobot));
+    const connectedCenter = getConnectedCenter(range, ci, currRobot, visibles.filter(visible => visible.x != currRobot.x || visible.y != currRobot.y));
     currRobot.newX = connectedCenter.x;
     currRobot.newY = connectedCenter.y;
 
@@ -49,12 +49,15 @@ function generate(iter, todo, state, range) {
   }
 
   for (let robot of newState) {
-    robot.x = robot.newX || robot.x;
-    robot.y = robot.newY || robot.y;
+    if (!robot.hasOwnProperty("newX")) {
+      continue;
+    }
+    robot.x = robot.newX;
+    robot.y = robot.newY;
     delete robot.newX;
     delete robot.newY;   
   }
-  
+
   postMessage({
     type: "generate",
     response: {
@@ -181,10 +184,14 @@ function miniDiscWith2Points(P, q1, q2) {
  */
 function getConnectedCenter(V, ci, Ri, R) {
   const Vgoal = new Vector([Ri, ci]);
+  if (Vgoal.norm == 0) {
+    return Ri;
+  }
+
   const limit = Math.min(...R.map(Rj => {
     const Vrirj = new Vector([Ri, Rj]);
     const dj = Vrirj.norm;
-    const {cosθj, sinθj} = Vrirj.getCosAndSin(new Vector([Ri, ci]));
+    const {cosθj, sinθj} = Vrirj.getCosAndSin(Vgoal);
     const lj = (dj / 2 * cosθj) + Math.sqrt((V / 2) ** 2 - (dj / 2 * sinθj) ** 2);
 
     return lj;
